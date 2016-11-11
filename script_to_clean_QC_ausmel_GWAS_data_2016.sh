@@ -61,13 +61,13 @@
 #0.3 Variables
 ########################################################################
 #working
-dirI=/working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/working_directory
+dirI=/working/lab_stuartma/puyaG/glaucoma/POAG2016genotypes/ANZRAG_phase4-Non-advancedGlaucoma_phase5-Progressa
 
 #write out
-dirK=/working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/cleaned
+dirK=/working/lab_stuartma/puyaG/glaucoma/POAG2016genotypes/ANZRAG_phase4-Non-advancedGlaucoma_phase5-Progressa/cleaned
 
 #liftover
-dirL=/working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/MANIFEST_CHAIN_QC_FILES
+#dirL=/working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/MANIFEST_CHAIN_QC_FILES
 
 #maf threshold for handling ambigious SNPs
 MAF=0.35
@@ -75,54 +75,29 @@ MAF=0.35
 #difference between 1kg and data to all aligning/retaining ambigious SNPs
 DIFF=0.1
 
-#Raw data
-dirJ=/working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/melanoma_GWAS_original
-raw_data=melanoma
+#Raw data Non-advancedGlaucoma
+dirJ=/working/lab_stuartma/puyaG/glaucoma/POAG2016genotypes/20150615_Hewitt_Non-advancedGlaucoma_DataRelease/PLINK_201016_0109
+raw_data=20150615_Hewitt_Non-advancedGlaucoma
 
-#beacon
-dirJB=/working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/BEACON_BACKUP
-raw_data2=beagess_australia_matthew
-#phenotypes
-raw_data2_p=beagess_australia_phenotypes_cleaned_controls_only.txt
+#Progressa
+dirJB=/working/lab_stuartma/puyaG/glaucoma/POAG2016genotypes/20150615_Hewitt_Progressa_DataRelease/PLINK_191016_0336
+raw_data2=20150615_Hewitt_Progressa
 
-#HEIDELBERG set
-dirJG=/working/lab_stuartma/scratch/matthewL/GERMAN_MELANOMA/ORIGINAL_GENOTYPES
-raw_data3=Melanoma1218_German1223
+#ENDO cases and controls to be used as controls here:
+#first extract ENDO cases and controls from the Release8_Observed_CoreExome data
+grep ENDO_CoreExome /reference/genepi/GWAS_release/Release8/Release8_Observed_CoreExome/GWAS_preMZ_projectbysample.txt > ${dirI}/ENDO_CoreExome
+awk 'NR==FNR{a[$1];next}($2 in a)' ${dirI}/ENDO_CoreExome /reference/genepi/GWAS_release/Release8/Release8_Observed_CoreExome/PLINK_format/GWAS_b37PlusStrand.fam | awk '{print $1, $2}' > ${dirI}/ENDO_CoreExome_extract
+module load plink/1.90b3.40
+plink --bfile /reference/genepi/GWAS_release/Release8/Release8_Observed_CoreExome/PLINK_format/GWAS_b37PlusStrand --keep ${dirI}/ENDO_CoreExome_extract --make-bed --out ${dirI}/ENDO_Release8_Observed_CoreExome
+raw_data3=${dirI}/ENDO_Release8_Observed_CoreExome
+
+#POAG phase 3:
+dirJG=/working/lab_stuartma/puyaG/glaucoma/POAG_cases_recent_011015_0928
+raw_data4=ANZRAG_POAG_cases_phase3_QIMR_twins_controls_merged_cleaned5_relatedness_removed2_ancestry_outliers_removed
 
 #OAG phase 1 and 2
-dirOAG=/working/lab_stuartma/puyaG/fullsamples
-OAG1=OAGphase1
-OAG2=OAGphase2
-
-#IBD
-dirJI=/working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/CIDR_WAMHS/IBD_omni_express_exome
-raw_data4=IBD_ids_alleles_exome_omni_sex_imputed_flip
-#as per the cleaning script in the IBD folder
-IBD_phenotypes=IBD_GWAS_phenotype_codes.txt
-
-#WAMHS - /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/CIDR_WAMHS/working_directory/script_to_clean_WAMHS_GWAS_data.sh for how the initial CIDR cleaned files were converted from A/B format to ACGT. No reason to repeat that here
-dirJW=/working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/CIDR_WAMHS/CIDR_WAMHS_plink_files
-raw_data5=WAMHS_CIDR_cleaning_only
-
-#MIA and QTWINS <<currently not operational as don't have controls....
-dirMIA=/working/lab_stuartma/matthewL/MELANOMA/MIA/CLEANED_GENOTYPES
-raw_data6=MIA_KK_melJuly2015_minimal_cleaning
-
-#EPIGENE/QTWINS (adapted from /mnt/lustre/home/matthewL/Melanoma/WHITEMAN/EPIGENE/SCRIPTS/script_to_identify_epigene_control_release8.sh ) - extracting genotyped data back out from the imputed data. There are a bunch of options avaliable in release8. To be comparable to the other work we want to use 1000GPhase1 (1000 genomes phase 1 v3) which is the same panel used for the other GenoMEL R01 datasets. Eventually we will re imputed this to phase3. According to the release notes (/reference/genepi/GWAS_release/Release8/README.txt we are going to want to use the main/merged set, not say the omni subset. However for this step - working out IDs - I probably don't need the imputed set. Once I have the IDs I can hopefully use PLINK to extract the SNPs I need for say R01. 
-  #Actually checked with SCOTT - data is in VCF format, can just use VCF tools to extract a list of IDs and SNPs....
-dirJEI=/reference/genepi/GWAS_release/Release8/Release8_Observed
-#observed
-dirJEO=/reference/genepi/GWAS_release/Release8/Release8_Observed_CoreExome/PLINK_format
-#original genotypes - my cleaning
-dirJE=/working/lab_stuartma/scratch/matthewL/EPIGENE2/EPIGENE_v3_24072014
-#ID map showing the full set of samples sent for cambridge genotyping
-EPIGENE_IDS=/working/lab_stuartma/scratch/matthewL/EPIGENE2/remap_data_SG/Cambridge_genome_studio_Samples_Table.txt
-#control IDs. While I am not using the quick cleaning and pairing I did previously with EPIGENE (see /mnt/lustre/home/matthewL/Melanoma/WHITEMAN/EPIGENE/SCRIPTS/script_to_identify_epigene_control_release8.sh) there is no sense repeating the but that identified QTWIN controls not in the existing 610k data - so just use that control list
-awk '$6==1 {print $1,$2}' /working/lab_stuartma/scratch/matthewL/EPIGENE2/GWAS_b37PlusStrand_EPIGENE_controls_IDs_core_exome_remapped_basic_cleaning.fam > ${dirI}/EPIGENE_QTWIN_IDs.txt; wc -l ${dirI}/EPIGENE_QTWIN_IDs.txt
-  #983
-echo ""
-EPIGENE_QTWIN_IDs=${dirI}/EPIGENE_QTWIN_IDs.txt
-raw_data7=GWAS_b37PlusStrand_EPIGENE_controls_IDs
+dirOAG=/working/lab_stuartma/puyaG/glaucoma
+raw_data5=WAMHS_GLUACOMA_IBD_BEACON_final_clean_IBD_PCA_outliers_removed
 
 ########################################################################
 #0.4 Functions
@@ -205,7 +180,7 @@ BEGIN {}
 }
 END {}
 __EOF__
-) > /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/SCRIPTS/awk_check_based_on_ID_1KG; chmod 744 /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/SCRIPTS/awk_check_based_on_ID_1KG
+) > ${dirI}/awk_check_based_on_ID_1KG; chmod 744 ${dirI}/awk_check_based_on_ID_1KG
 
 #the following function compares SNPs matched by position (CHR, BP) and check their IDs, and if different, works out if they are likely the same SNP. Also works out flips etc
   #Next thing to to fix the reverse - same position, and alleles, but different ID. This is not necessary for IMPUTE2 (as it does that for you, since it only cares about position) but might been needed for HRC, and will also highlight duplicate SNPs in the data (same SNP under different names). Should probably test for those first within each set, and will need to do again after merging. Oh wait I remember this is a pain to do as it fails each time it hit an unfixable pair, even if there might be many. Hmmm, in SDH many of these seem to have 0,0 for positions, or for alleles
@@ -251,7 +226,7 @@ BEGIN {}
   }
 END {}
 __EOF__
-) > /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/SCRIPTS/awk_check_based_on_pos_1KG; chmod 744 /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/SCRIPTS/awk_check_based_on_pos_1KG
+) > ${dirI}/awk_check_based_on_pos_1KG; chmod 744 ${dirI}/awk_check_based_on_pos_1KG
 
 
 ########################################################################
@@ -260,6 +235,7 @@ __EOF__
    #25/07/2016 found a 2 pairs of SNPs where the liftover positions are wrong. Looks to be where to of the same kind of SNPs (e.g. both A/G) with sim freqs are next to each other; the chain has assigned one to the wrong positon, and dropped the other. This will fix that if in the dataset. 27/07/2016 I wonder if it more that these positions ar wrong in the initial bim, and instead liftover just adds bp to convert from hg18-hg19. For OAG2 there are a bunch of SNPs that are wrong by 1b[ in the initial bim, and wrong by 1 post liftover. Might be better to have this step after the liftover to harmonise all steps. Following list accrued from various attempts to merge files etc. On 13/07/2016 found ~16 multiple position SNPs that aren't in 1KG data I have. Looked them up in dbSNP manually, and where possible gave them the hg19 position. A few were flagged as suspect or had some other oddity - rs11930373 has two positions in dbSNP - as in 66358713:66358714 which I have never seen before, so were removed. I was correcting these just in omni (as they had only shown up when merged with SDH but they are wrong in AMFS as well, so fix it now for all
   #Further run throughs identified additional SNPs on the arrays, but not in 1KG ref files, with different positions between SDH and QMEGA_omni; a number had been zeroed out. Where they could be matched by position/freq to real SNPs in dbSNP added and initial step at the start of the script to remap them otherwise exclude them. Some requiring flipping still (as not in 1kG ref files I have can't align them to a set strand.
 
+##PG can use the folowing to remap as well (even if the map being correct in my dataset, it won't cause a problem since the map will remain unged in such case).
 
 cd $dirI
 
