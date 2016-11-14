@@ -613,18 +613,20 @@ echo "exm2268606 23" >> fix_remap_chr #listed as X_PAR in WAMHS when is X
 echo "rs1198735 23" >> fix_remap_chr #listed as X_PAR in WAMHS when is X
 
 #loop sections 1 and 2 to be able to turn on/off
-for x in #1
-do
+#for x in #1
+#do
 
   ########################################################################
   #1.0 Fix up the BEACON fam file to make it loopable
   ########################################################################
-  #14/06/2016 BEACON data is a bit borked - FID, PID and MID are all NA, which makes PLINK treat them as non founders. So reset them all to IID,0 and 0 respectively. Also fix status to controls
-  echo -e "\nExtracting BEACON controls and fixing their PID, FID and MID (all NA).\n"
+##I use # to deactivate lines with are not relavant to the current study.
+  
+#14/06/2016 BEACON data is a bit borked - FID, PID and MID are all NA, which makes PLINK treat them as non founders. So reset them all to IID,0 and 0 respectively. Also fix status to controls
+  #echo -e "\nExtracting BEACON controls and fixing their PID, FID and MID (all NA).\n"
 
   #07/07/2016 these functions are all straight forward (will only change if the source files moves) so add --silent
-  awk '{print $1,$2}' ${dirJB}/${raw_data2_p} > ${dirI}/temp_${raw_data2_p}
-  plink_1.90 --threads 1 --bfile ${dirJB}/${raw_data2} --keep ${dirI}/temp_${raw_data2_p} --make-bed --out ${dirI}/temp_2016_cleaning_SDH --silent
+  #awk '{print $1,$2}' ${dirJB}/${raw_data2_p} > ${dirI}/temp_${raw_data2_p}
+  #plink_1.90 --threads 1 --bfile ${dirJB}/${raw_data2} --keep ${dirI}/temp_${raw_data2_p} --make-bed --out ${dirI}/temp_2016_cleaning_SDH --silent
     #Total genotyping rate in remaining samples is 0.879269. 1134514 variants and 570 people pass filters and QC.
 
   #check the sex
@@ -632,44 +634,46 @@ do
     #no problems found, disable
 
   #11/07/2016 getting het haploid warning, and PLINK recommends you fix these asap. I previously tried splitX to fix this but it doesn't (PLINK seems to have a differnt idea about what are the boundaries for the PAR region. 1673 SNPs but many are dups (het in more than one person)
-  echo ""
-  awk '{print $3}' ${dirI}/temp_2016_cleaning_SDH.hh | sort | uniq >  ${dirI}/temp_2016_cleaning_SDH.hh_snps; wc -l ${dirI}/temp_2016_cleaning_SDH.hh_snps
+  #echo ""
+  #awk '{print $3}' ${dirI}/temp_2016_cleaning_SDH.hh | sort | uniq >  ${dirI}/temp_2016_cleaning_SDH.hh_snps; wc -l ${dirI}/temp_2016_cleaning_SDH.hh_snps
     #563
 
   #quick check. Some are chrY (17 or so), rest are chromsome X. Looked around a bit and even though GRC etc have slightly different PAR boundaries http://www.ncbi.nlm.nih.gov/projects/genome/assembly/grc/human/ this doesn't explain  these. Checked a handful and they have the correct hg19 positions. So probabyly best to just remove them. 
-  awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_2016_cleaning_SDH.hh_snps ${dirI}/temp_2016_cleaning_SDH.bim | awk '($1==23 && ($4 >= 60001 && $4 <= 2699520)) ||($1==23 && ($4 >= 154931044 && $4 <= 155260560)) || ($1==24 && ($4 >= 10001 && $4 <= 2649520)) || ($1==24 && ($4 >= 59034050 && $4 <= 59363566))' | wc -l
+  #awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_2016_cleaning_SDH.hh_snps ${dirI}/temp_2016_cleaning_SDH.bim | awk '($1==23 && ($4 >= 60001 && $4 <= 2699520)) ||($1==23 && ($4 >= 154931044 && $4 <= 155260560)) || ($1==24 && ($4 >= 10001 && $4 <= 2649520)) || ($1==24 && ($4 >= 59034050 && $4 <= 59363566))' | wc -l
     #0
 
-  echo  ""
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_SDH --freq --out ${dirI}/temp_2016_cleaning_SDH --nonfounders --silent 
+  #echo  ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_SDH --freq --out ${dirI}/temp_2016_cleaning_SDH --nonfounders --silent 
 
-  echo ""
-  awk '$1!=0 && $5!=0 && $5<0.01 && $5>0.001' ${dirI}/temp_2016_cleaning_SDH.frq | wc -l
+  #echo ""
+  #awk '$1!=0 && $5!=0 && $5<0.01 && $5>0.001' ${dirI}/temp_2016_cleaning_SDH.frq | wc -l
     #36538 after filtering .hh SNPs
 
   #need to fix the IDs/founder status. In fact the whole ID file is a problem  - FID is NA, family status is NA NA, fix to FID=IID and change them to controls
-  awk '{print $2,$2,"0","0",$5,"1"}' ${dirI}/temp_2016_cleaning_SDH.fam > ${dirI}/temp_2016_cleaning_SDH2.fam
-  echo -e "\nRemoving het haploid SNPs that do not fall in any accepted PAR boundary positions"
-  plink_1.90 --threads 1 --bed ${dirI}/temp_2016_cleaning_SDH.bed --fam ${dirI}/temp_2016_cleaning_SDH2.fam --bim ${dirI}/temp_2016_cleaning_SDH.bim --make-bed --out ${dirI}/temp_2016_cleaning_SDH_2 --exclude ${dirI}/temp_2016_cleaning_SDH.hh_snps --silent
+  #awk '{print $2,$2,"0","0",$5,"1"}' ${dirI}/temp_2016_cleaning_SDH.fam > ${dirI}/temp_2016_cleaning_SDH2.fam
+  #echo -e "\nRemoving het haploid SNPs that do not fall in any accepted PAR boundary positions"
+  #plink_1.90 --threads 1 --bed ${dirI}/temp_2016_cleaning_SDH.bed --fam ${dirI}/temp_2016_cleaning_SDH2.fam --bim ${dirI}/temp_2016_cleaning_SDH.bim --make-bed --out ${dirI}/temp_2016_cleaning_SDH_2 --exclude ${dirI}/temp_2016_cleaning_SDH.hh_snps --silent
     #--exclude: 1133951 variants remaining. 1133951 variants and 570 people pass filters and QC. Among remaining phenotypes, 0 are cases and 570 are controls.
 
   #intermin clean
-  rm -f ${dirI}/temp_2016_cleaning_SDH_omni_amb_pre ${dirI}/temp_2016_cleaning_SDH.* ${dirI}/temp_${raw_data2_p} ${dirI}/temp_2016_cleaning_SDH.hh_snps 
+  #rm -f ${dirI}/temp_2016_cleaning_SDH_omni_amb_pre ${dirI}/temp_2016_cleaning_SDH.* ${dirI}/temp_${raw_data2_p} ${dirI}/temp_2016_cleaning_SDH.hh_snps 
 
   ########################################################################
-  #2.0 Seperating out the samples
+  #2.0 Initial cleaninf for phase 4 , non-advanced POAG
   ########################################################################
   #15/06/2016 I was going to try align/remap the samples before splitting them but I just realised I need to align them as seperate case and controls groups for each analysis set or I wont pick up borked SNPs, especially since I want to try keep in ambigious SNPs (e.g. I may not captue an A/T SNP flipped in QMEGA_610k relative to endo/qtwin 610k. The melanoma dataset is three sets merged without cleaning (provided by SM back when I started). It is the AMFS (omni1M), and QMEGA cases on omni1M, QMEGA cases and 610, and endo + qtwin controls on 610/670k. Need to seperate them out, and give them similar names, so I can then work with loops
 
   #11/07/2016 I now want to drop .hh SNPs at the start so run a test to generate a file
 
-  echo -e "\nSeperating melanoma samples into individual case/controls sets, and removing het haploid SNPs etc...\n"
 
+  echo -e "\nInitial cleaninf for phase 4 , non-advanced POAG by removing het haploid SNPs etc...\n"
+  
+  # to male bfile format:
+  plink_1.90 --threads 1 --ped ${dirJ}/${raw_data}.ped --map ${dirJ}/${raw_data}.map --make-bed --out ${dirJ}/${raw_data}
   plink_1.90 --threads 1 --bfile  ${dirJ}/${raw_data} --freq --out ${dirI}/temp_${raw_data} --silent
-    #Warning: 10510 het. haploid genotypes present (see /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/working_directory/temp_melanoma.hh ); many commands treat these as missing.
+
   echo ""
   awk '{print $3}' ${dirI}/temp_${raw_data}.hh | sort | uniq > ${dirI}/temp_${raw_data}.hh_snps; wc -l ${dirI}/temp_${raw_data}.hh_snps
-    #8948
 
   #do any fall in the boundaries http://www.ncbi.nlm.nih.gov/projects/genome/assembly/grc/human/
   echo ""
@@ -681,23 +685,8 @@ do
   plink_1.90 --threads 1 --bfile  ${dirJ}/${raw_data} --exclude ${dirI}/temp_${raw_data}.hh_snps --check-sex --out ${dirI}/temp_${raw_data} --silent
   echo -e "\nCheck sex results for ${raw_data} : showing non OK results\n"
   grep -v "OK" ${dirI}/temp_${raw_data}.sexcheck
-    #        FID         IID       PEDSEX       SNPSEX       STATUS            F
-    #AMI014920   AMI014920            2            0      PROBLEM       0.4021
-    #AMI012078   AMI012078            2            1      PROBLEM            1
-    #AMI002402   AMI002402            2            0      PROBLEM       0.2105
-    #AMI004101   AMI004101            2            1      PROBLEM       0.9996
-    #     2289        2289            2            1      PROBLEM            1
-    # 41028001    41028001            2            1      PROBLEM            1
-    #    50400       50400            2            0      PROBLEM       0.2347
-    #    86397     8639704            2            0      PROBLEM       0.2008
-    #    86523     8652304            2            1      PROBLEM            1
-    #    E1228   E12280001            2            0      PROBLEM       0.3417
-    #    E8720   E87200001            2            1      PROBLEM       0.9994
-
-    #best be safe and fix incorrect and remove those with 0
   echo -e "\nCorrect gender based on sex check, and remove people with failed sex check, and removing het haploid SNPs and setting non zero nonmale Y calls to missing\n"
   awk '$4==0 {print $1,$2}' ${dirI}/temp_${raw_data}.sexcheck > ${dirI}/temp_${raw_data}.sexcheck_remove; wc -l ${dirI}/temp_${raw_data}.sexcheck_remove
-    #5
   echo ""
   #21/07/2016 checking this over, found I wasn't actually writing out the SNPSEX, just the whole file (which would have resulted in the PED sex being used)
   awk '$5=="PROBLEM" && $4!="0" {print $1,$2,$4}' ${dirI}/temp_${raw_data}.sexcheck > ${dirI}/temp_${raw_data}.sexcheck_update; wc -l ${dirI}/temp_${raw_data}.sexcheck_update
@@ -705,20 +694,16 @@ do
   echo ""
   #so remove them them, and then work from that copy
   plink_1.90 --threads 1 --bfile  ${dirJ}/${raw_data} --exclude ${dirI}/temp_${raw_data}.hh_snps --make-bed --out ${dirI}/temp_${raw_data} --remove ${dirI}/temp_${raw_data}.sexcheck_remove --update-sex ${dirI}/temp_${raw_data}.sexcheck_update --silent
-    #1043006 variants loaded from .bim file. 6556 people (1996 males, 4560 females) loaded from .fam. --exclude: 1034058 variants remaining. --update-sex: 6 people updated. --remove: 6551 people remaining. 1034058 variants and 6551 people pass filters and QC. Among remaining phenotypes, 2166 are cases and 4384 are controls.  (1 phenotype is missing.)
 
   #still getting "Warning: Nonmissing nonmale Y chromosome genotype(s) present; many commands treat these as missing." Running this command oesnt' give a lot of info but the missingness rate, SNP N doesnt' really change. I tried to work out which SNP(s) were causing this but filter-females/filter males then freq found no non male chr 24 SNPs with a valid genotype. #looking at them it doesn't seeem to be systematic; eahc perosn has a different single genotype, and always homozygous, so might just be borderline signals in the cluster plot s? As in rare false positives rather than a bad SNP. So just use hh. Not worth folowing further, just set to missing
     ##echo ""
-    ##plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data} --chr 24 --recode --out ${dirI}/temp_${raw_data}_2
-      #Total genotyping rate is 0.431536. 338 variants and 6551 people pass filters and QC.
+    plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data} --chr 24 --recode --out ${dirI}/temp_${raw_data}_2
     ###use set hh and try find the diff
-    ##plink_1.90 --threads 1 --file  ${dirI}/temp_${raw_data}_2 --set-hh-missing --recode --out ${dirI}/temp_${raw_data}_3
-    ###Total genotyping rate is 0.431536. 338 variants and 6551 people pass filters and QC.
-    ##wc -l ${dirI}/temp_${raw_data}_2.ped
-    ###6551
-    ##awk 'NR==FNR {a[$0];next} !($0 in a)' ${dirI}/temp_${raw_data}_3.ped ${dirI}/temp_${raw_data}_2.ped | wc -l
-    ###81 changed lines
-
+    plink_1.90 --threads 1 --file  ${dirI}/temp_${raw_data}_2 --set-hh-missing --recode --out ${dirI}/temp_${raw_data}_3
+    wc -l ${dirI}/temp_${raw_data}_2.ped
+    awk 'NR==FNR {a[$0];next} !($0 in a)' ${dirI}/temp_${raw_data}_3.ped ${dirI}/temp_${raw_data}_2.ped | wc -l
+    ###324 changed lines
+    rm ${dirI}/temp_${raw_data}_2* ${dirI}/temp_${raw_data}_3*
   #set hh to missing, then overwrite the earlier version
   plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data} --set-hh-missing --make-bed --out ${dirI}/temp_${raw_data}_2 --silent
   plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data}_2 --make-bed --out ${dirI}/temp_${raw_data} --silent
@@ -727,59 +712,58 @@ do
   #interim clean
   rm -f ${dirI}/temp_${raw_data}_2.* ${dirI}/temp_${raw_data}.hh* ${dirI}/temp_${raw_data}.sexcheck*
   #Sample lists
-  grep "AMI" ${dirI}/temp_${raw_data}.fam | cut -d" " -f1-2 > ${dirI}/temp_2016_cleaning_AMFS; wc -l ${dirI}/temp_2016_cleaning_AMFS
     #978
-  echo ""
-  plink_1.90 --threads 1 --bfile  ${dirI}/temp_${raw_data} --keep ${dirI}/temp_2016_cleaning_AMFS --make-bed --out ${dirI}/temp_2016_cleaning_AMFS --silent
+  #echo ""
+  #plink_1.90 --threads 1 --bfile  ${dirI}/temp_${raw_data} --keep ${dirI}/temp_2016_cleaning_AMFS --make-bed --out ${dirI}/temp_2016_cleaning_AMFS --silent
     #--keep: 978 people remaining.Total genotyping rate in remaining samples is 0.781615. (inc lots of 610k/670k SNPs) 1034058 variants and 978 people pass filters and QC.Among remaining phenotypes, 548 are cases and 430 are controls.
 
   #Now split these into cases and controls for aligning with 1kg
-  plink_1.90 --threads 1 --bfile  ${dirI}/temp_2016_cleaning_AMFS --filter-cases --make-bed --out ${dirI}/temp_2016_cleaning_AMFS_cases --silent
+  #plink_1.90 --threads 1 --bfile  ${dirI}/temp_2016_cleaning_AMFS --filter-cases --make-bed --out ${dirI}/temp_2016_cleaning_AMFS_cases --silent
     #Post fixing/removing X/Y calls 1034058 (was 1043006) variants and 548 people pass filters and QC.
-  plink_1.90 --threads 1 --bfile  ${dirI}/temp_2016_cleaning_AMFS --filter-controls --make-bed --out ${dirI}/temp_2016_cleaning_AMFS_controls --silent
+  #plink_1.90 --threads 1 --bfile  ${dirI}/temp_2016_cleaning_AMFS --filter-controls --make-bed --out ${dirI}/temp_2016_cleaning_AMFS_controls --silent
     #1034058 variants and 430 people pass filters and QC.
 
   #get rid of these from the starting file
-  plink_1.90 --threads 1 --bfile  ${dirI}/temp_${raw_data} --remove ${dirI}/temp_2016_cleaning_AMFS --make-bed --out ${dirI}/temp_2016_cleaning_1 --silent
+  #plink_1.90 --threads 1 --bfile  ${dirI}/temp_${raw_data} --remove ${dirI}/temp_2016_cleaning_AMFS --make-bed --out ${dirI}/temp_2016_cleaning_1 --silent
     #6551 phenotype values loaded from .fam.--remove: 5573 people remaining. 1034058 variants and 5573 people pass filters and QC.Among remaining phenotypes, 1618 are cases and 3954 are controls.
 
   #now all the controls left are on the 610k/670k list; can use this to back determine samples
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_1 --filter-controls --geno 0.1 --make-bed --out ${dirI}/temp_2016_cleaning_2 --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_1 --filter-controls --geno 0.1 --make-bed --out ${dirI}/temp_2016_cleaning_2 --silent
     #529966 variants removed due to missing genotype data (--geno). 504092 variants and 3954 people pass filters and QC Among remaining phenotypes, 0 are cases and 3954 are controls 
 
-  awk '{print $2}' ${dirI}/temp_2016_cleaning_2.bim > ${dirI}/temp_2016_cleaning_2_snps; wc -l ${dirI}/temp_2016_cleaning_2_snps
+  #awk '{print $2}' ${dirI}/temp_2016_cleaning_2.bim > ${dirI}/temp_2016_cleaning_2_snps; wc -l ${dirI}/temp_2016_cleaning_2_snps
     #504092
   #now filter back on this
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_1 --extract ${dirI}/temp_2016_cleaning_2_snps --make-bed --out ${dirI}/temp_2016_cleaning_3 --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_1 --extract ${dirI}/temp_2016_cleaning_2_snps --make-bed --out ${dirI}/temp_2016_cleaning_3 --silent
     #1034058 variants loaded from .bim file. 5573 people (1614 males, 3959 females) loaded from .fam. --extract: 504092 variants remaining Total genotyping rate is 0.947502. 504092 variants and 5573 people pass filters and QC. Among remaining phenotypes, 1618 are cases and 3954 are controls.
 
   #now use this to ID the Q-MEGA cases on the omni chip (as will have high mind
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_3 --mind 0.1 --make-bed --out ${dirI}/temp_2016_cleaning_4 --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_3 --mind 0.1 --make-bed --out ${dirI}/temp_2016_cleaning_4 --silent
     #Among remaining phenotypes, 925 are cases and 3954 are controls. <<nice, exaact >> .IDs written to /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/working_directory/temp_2016_cleaning_4.irem
     
   #if I did this right the irem will only be cases
-  echo -e "\nChecking phenotype of people in .irem file, should all be cases (2):"
-  awk 'NR==FNR {a[$1,$2];next} ($1,$2) in a {print $6}' ${dirI}/temp_2016_cleaning_4.irem ${dirI}/temp_2016_cleaning_1.fam | sort | uniq -c
+  #echo -e "\nChecking phenotype of people in .irem file, should all be cases (2):"
+  #awk 'NR==FNR {a[$1,$2];next} ($1,$2) in a {print $6}' ${dirI}/temp_2016_cleaning_4.irem ${dirI}/temp_2016_cleaning_1.fam | sort | uniq -c
     #    693 2
     #      1 -9
   #lets me careful and make sure we haven't lost a few SNPs in this adhoc way, so work back from the sample lists
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data} --keep ${dirI}/temp_2016_cleaning_4.irem --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_omni_cases --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data} --keep ${dirI}/temp_2016_cleaning_4.irem --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_omni_cases --silent
     #Among remaining phenotypes, 693 are cases and 0 are controls.  (1 phenotype is missing.)
   #now combine the AMFS and irem list
-  cat ${dirI}/temp_2016_cleaning_4.irem ${dirI}/temp_2016_cleaning_AMFS > ${dirI}/temp_2016_cleaning_non_610k
+  #cat ${dirI}/temp_2016_cleaning_4.irem ${dirI}/temp_2016_cleaning_AMFS > ${dirI}/temp_2016_cleaning_non_610k
 
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data} --remove ${dirI}/temp_2016_cleaning_non_610k --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_610k --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data} --remove ${dirI}/temp_2016_cleaning_non_610k --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_610k --silent
     #1034058 variants and 4879 people pass filters and QC. Among remaining phenotypes, 925 are cases and 3954 are controls.
   #15/06/2016 split these into cases and controls
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_QMEGA_610k --filter-cases --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_610k_cases --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_QMEGA_610k --filter-cases --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_610k_cases --silent
     #1034058 variants and 925 people pass filters and QC.
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_QMEGA_610k --filter-controls --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_610k_controls --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_QMEGA_610k --filter-controls --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_610k_controls --silent
     #1034058 variants and 3954 people pass filters and QC.
 
   #interim clean
-  rm -f ${dirI}/temp_2016_cleaning_2_snps ${dirI}/temp_${raw_data}.*
+  #rm -f ${dirI}/temp_2016_cleaning_2_snps ${dirI}/temp_${raw_data}.*
 
-done #loop to turn on/off
+#done #loop to turn on/off
 
 ########################################################################
 #2.1 HEIDELBERG
