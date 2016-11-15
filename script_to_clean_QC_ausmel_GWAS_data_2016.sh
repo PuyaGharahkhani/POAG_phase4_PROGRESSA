@@ -89,7 +89,7 @@ grep ENDO_CoreExome /reference/genepi/GWAS_release/Release8/Release8_Observed_Co
 awk 'NR==FNR{a[$1];next}($2 in a)' ${dirI}/ENDO_CoreExome /reference/genepi/GWAS_release/Release8/Release8_Observed_CoreExome/PLINK_format/GWAS_b37PlusStrand.fam | awk '{print $1, $2}' > ${dirI}/ENDO_CoreExome_extract
 module load plink/1.90b3.40
 plink --bfile /reference/genepi/GWAS_release/Release8/Release8_Observed_CoreExome/PLINK_format/GWAS_b37PlusStrand --keep ${dirI}/ENDO_CoreExome_extract --make-bed --out ${dirI}/ENDO_Release8_Observed_CoreExome
-raw_data3=${dirI}/ENDO_Release8_Observed_CoreExome
+raw_data3=ENDO_Release8_Observed_CoreExome
 
 #POAG phase 3:
 dirJG=/working/lab_stuartma/puyaG/glaucoma/POAG_cases_recent_011015_0928
@@ -617,46 +617,43 @@ echo "rs1198735 23" >> fix_remap_chr #listed as X_PAR in WAMHS when is X
 #do
 
   ########################################################################
-  #1.0 Fix up the BEACON fam file to make it loopable
+  #1.0 Initial cleaning for phase 5, Progressa
   ########################################################################
 ##I use # to deactivate lines with are not relavant to the current study.
   
-#14/06/2016 BEACON data is a bit borked - FID, PID and MID are all NA, which makes PLINK treat them as non founders. So reset them all to IID,0 and 0 respectively. Also fix status to controls
-  #echo -e "\nExtracting BEACON controls and fixing their PID, FID and MID (all NA).\n"
-
   #07/07/2016 these functions are all straight forward (will only change if the source files moves) so add --silent
   #awk '{print $1,$2}' ${dirJB}/${raw_data2_p} > ${dirI}/temp_${raw_data2_p}
-  #plink_1.90 --threads 1 --bfile ${dirJB}/${raw_data2} --keep ${dirI}/temp_${raw_data2_p} --make-bed --out ${dirI}/temp_2016_cleaning_SDH --silent
-    #Total genotyping rate in remaining samples is 0.879269. 1134514 variants and 570 people pass filters and QC.
+  plink_1.90 --threads 1 --ped ${dirJB}/${raw_data2}.ped --map ${dirJB}/${raw_data2}.map --make-bed --out ${dirJB}/${raw_data2} --silent
 
   #check the sex
-  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_SDH --check-sex --out ${dirI}/temp_2016_cleaning_SDH --nonfounders --silent
-    #no problems found, disable
+  plink_1.90 --threads 1 --bfile ${dirJB}/${raw_data2} --check-sex --out ${dirI}/temp_${raw_data2} --nonfounders --silent
+  awk '$5=="PROBLEM" && $4!="0" {print $1,$2,$4}' ${dirI}/temp_${raw_data2}.sexcheck > ${dirI}/temp_${raw_data2}.sexcheck_update; wc -l ${dirI}/temp_${raw_data2}.sexcheck_update
+  plink_1.90 --threads 1 --bfile ${dirJB}/${raw_data2} --update-sex ${dirI}/temp_${raw_data2}.sexcheck_update --make-bed --out ${dirJB}/${raw_data2}_updatedsex
 
   #11/07/2016 getting het haploid warning, and PLINK recommends you fix these asap. I previously tried splitX to fix this but it doesn't (PLINK seems to have a differnt idea about what are the boundaries for the PAR region. 1673 SNPs but many are dups (het in more than one person)
-  #echo ""
-  #awk '{print $3}' ${dirI}/temp_2016_cleaning_SDH.hh | sort | uniq >  ${dirI}/temp_2016_cleaning_SDH.hh_snps; wc -l ${dirI}/temp_2016_cleaning_SDH.hh_snps
-    #563
+  echo ""
+  awk '{print $3}' ${dirJB}/${raw_data2}_updatedsex.hh | sort | uniq >  ${dirI}/temp_2016_cleaning.hh_snps; wc -l ${dirI}/temp_2016_cleaning.hh_snps
+  awk '$4==0 {print $1,$2}' ${dirI}/temp_${raw_data2}.sexcheck > ${dirI}/temp_${raw_data2}.sexcheck_remove; wc -l ${dirI}/temp_${raw_data2}.sexcheck_remove
 
   #quick check. Some are chrY (17 or so), rest are chromsome X. Looked around a bit and even though GRC etc have slightly different PAR boundaries http://www.ncbi.nlm.nih.gov/projects/genome/assembly/grc/human/ this doesn't explain  these. Checked a handful and they have the correct hg19 positions. So probabyly best to just remove them. 
-  #awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_2016_cleaning_SDH.hh_snps ${dirI}/temp_2016_cleaning_SDH.bim | awk '($1==23 && ($4 >= 60001 && $4 <= 2699520)) ||($1==23 && ($4 >= 154931044 && $4 <= 155260560)) || ($1==24 && ($4 >= 10001 && $4 <= 2649520)) || ($1==24 && ($4 >= 59034050 && $4 <= 59363566))' | wc -l
+  awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_2016_cleaning.hh_snps ${dirJB}/${raw_data2}_updatedsex.bim | awk '($1==23 && ($4 >= 60001 && $4 <= 2699520)) ||($1==23 && ($4 >= 154931044 && $4 <= 155260560)) || ($1==24 && ($4 >= 10001 && $4 <= 2649520)) || ($1==24 && ($4 >= 59034050 && $4 <= 59363566))' | wc -l
     #0
 
   #echo  ""
-  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_SDH --freq --out ${dirI}/temp_2016_cleaning_SDH --nonfounders --silent 
+  #plink_1.90 --threads 1 --bfile ${dirJB}/${raw_data2}_updatedsex --set-hh-missing --make-bed --out ${dirI}/temp_${raw_data2}
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data2} --freq --out ${dirI}/temp_2016_cleaning --nonfounders --silent 
 
   #echo ""
-  #awk '$1!=0 && $5!=0 && $5<0.01 && $5>0.001' ${dirI}/temp_2016_cleaning_SDH.frq | wc -l
-    #36538 after filtering .hh SNPs
+  #awk '$1!=0 && $5!=0 && $5<0.01 && $5>0.001' ${dirI}/temp_2016_cleaning.frq | wc -l
+    #34147 after filtering .hh SNPs
 
-  #need to fix the IDs/founder status. In fact the whole ID file is a problem  - FID is NA, family status is NA NA, fix to FID=IID and change them to controls
-  #awk '{print $2,$2,"0","0",$5,"1"}' ${dirI}/temp_2016_cleaning_SDH.fam > ${dirI}/temp_2016_cleaning_SDH2.fam
-  #echo -e "\nRemoving het haploid SNPs that do not fall in any accepted PAR boundary positions"
-  #plink_1.90 --threads 1 --bed ${dirI}/temp_2016_cleaning_SDH.bed --fam ${dirI}/temp_2016_cleaning_SDH2.fam --bim ${dirI}/temp_2016_cleaning_SDH.bim --make-bed --out ${dirI}/temp_2016_cleaning_SDH_2 --exclude ${dirI}/temp_2016_cleaning_SDH.hh_snps --silent
-    #--exclude: 1133951 variants remaining. 1133951 variants and 570 people pass filters and QC. Among remaining phenotypes, 0 are cases and 570 are controls.
+  echo -e "\nRemoving het haploid SNPs that do not fall in any accepted PAR boundary positions"
+  plink_1.90 --threads 1 --bfile ${dirJB}/${raw_data2}_updatedsex --make-bed --out ${dirI}/temp_${raw_data2} --exclude ${dirI}/temp_2016_cleaning.hh_snps --remove ${dirI}/temp_${raw_data2}.sexcheck_remove --silent
+  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data2} --make-bed --set-hh-missing --out ${dirI}/temp_${raw_data2}_2
+  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data2}_2 --make-bed --out ${dirI}/temp_${raw_data2} --silent
 
   #intermin clean
-  #rm -f ${dirI}/temp_2016_cleaning_SDH_omni_amb_pre ${dirI}/temp_2016_cleaning_SDH.* ${dirI}/temp_${raw_data2_p} ${dirI}/temp_2016_cleaning_SDH.hh_snps 
+  rm -f  ${dirI}/temp_2016_cleaning.* ${dirI}/temp_2016_cleaning.hh_snps ${dirI}/temp_${raw_data2}_2*
 
   ########################################################################
   #2.0 Initial cleaninf for phase 4 , non-advanced POAG
@@ -711,437 +708,388 @@ echo "rs1198735 23" >> fix_remap_chr #listed as X_PAR in WAMHS when is X
   echo -e "\nHet haploid SNPs, non missing non male y calls removed\n"
   #interim clean
   rm -f ${dirI}/temp_${raw_data}_2.* ${dirI}/temp_${raw_data}.hh* ${dirI}/temp_${raw_data}.sexcheck*
-  #Sample lists
-    #978
-  #echo ""
-  #plink_1.90 --threads 1 --bfile  ${dirI}/temp_${raw_data} --keep ${dirI}/temp_2016_cleaning_AMFS --make-bed --out ${dirI}/temp_2016_cleaning_AMFS --silent
-    #--keep: 978 people remaining.Total genotyping rate in remaining samples is 0.781615. (inc lots of 610k/670k SNPs) 1034058 variants and 978 people pass filters and QC.Among remaining phenotypes, 548 are cases and 430 are controls.
-
-  #Now split these into cases and controls for aligning with 1kg
-  #plink_1.90 --threads 1 --bfile  ${dirI}/temp_2016_cleaning_AMFS --filter-cases --make-bed --out ${dirI}/temp_2016_cleaning_AMFS_cases --silent
-    #Post fixing/removing X/Y calls 1034058 (was 1043006) variants and 548 people pass filters and QC.
-  #plink_1.90 --threads 1 --bfile  ${dirI}/temp_2016_cleaning_AMFS --filter-controls --make-bed --out ${dirI}/temp_2016_cleaning_AMFS_controls --silent
-    #1034058 variants and 430 people pass filters and QC.
-
-  #get rid of these from the starting file
-  #plink_1.90 --threads 1 --bfile  ${dirI}/temp_${raw_data} --remove ${dirI}/temp_2016_cleaning_AMFS --make-bed --out ${dirI}/temp_2016_cleaning_1 --silent
-    #6551 phenotype values loaded from .fam.--remove: 5573 people remaining. 1034058 variants and 5573 people pass filters and QC.Among remaining phenotypes, 1618 are cases and 3954 are controls.
-
-  #now all the controls left are on the 610k/670k list; can use this to back determine samples
-  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_1 --filter-controls --geno 0.1 --make-bed --out ${dirI}/temp_2016_cleaning_2 --silent
-    #529966 variants removed due to missing genotype data (--geno). 504092 variants and 3954 people pass filters and QC Among remaining phenotypes, 0 are cases and 3954 are controls 
-
-  #awk '{print $2}' ${dirI}/temp_2016_cleaning_2.bim > ${dirI}/temp_2016_cleaning_2_snps; wc -l ${dirI}/temp_2016_cleaning_2_snps
-    #504092
-  #now filter back on this
-  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_1 --extract ${dirI}/temp_2016_cleaning_2_snps --make-bed --out ${dirI}/temp_2016_cleaning_3 --silent
-    #1034058 variants loaded from .bim file. 5573 people (1614 males, 3959 females) loaded from .fam. --extract: 504092 variants remaining Total genotyping rate is 0.947502. 504092 variants and 5573 people pass filters and QC. Among remaining phenotypes, 1618 are cases and 3954 are controls.
-
-  #now use this to ID the Q-MEGA cases on the omni chip (as will have high mind
-  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_3 --mind 0.1 --make-bed --out ${dirI}/temp_2016_cleaning_4 --silent
-    #Among remaining phenotypes, 925 are cases and 3954 are controls. <<nice, exaact >> .IDs written to /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/working_directory/temp_2016_cleaning_4.irem
-    
-  #if I did this right the irem will only be cases
-  #echo -e "\nChecking phenotype of people in .irem file, should all be cases (2):"
-  #awk 'NR==FNR {a[$1,$2];next} ($1,$2) in a {print $6}' ${dirI}/temp_2016_cleaning_4.irem ${dirI}/temp_2016_cleaning_1.fam | sort | uniq -c
-    #    693 2
-    #      1 -9
-  #lets me careful and make sure we haven't lost a few SNPs in this adhoc way, so work back from the sample lists
-  #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data} --keep ${dirI}/temp_2016_cleaning_4.irem --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_omni_cases --silent
-    #Among remaining phenotypes, 693 are cases and 0 are controls.  (1 phenotype is missing.)
-  #now combine the AMFS and irem list
-  #cat ${dirI}/temp_2016_cleaning_4.irem ${dirI}/temp_2016_cleaning_AMFS > ${dirI}/temp_2016_cleaning_non_610k
-
-  #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data} --remove ${dirI}/temp_2016_cleaning_non_610k --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_610k --silent
-    #1034058 variants and 4879 people pass filters and QC. Among remaining phenotypes, 925 are cases and 3954 are controls.
-  #15/06/2016 split these into cases and controls
-  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_QMEGA_610k --filter-cases --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_610k_cases --silent
-    #1034058 variants and 925 people pass filters and QC.
-  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_QMEGA_610k --filter-controls --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_610k_controls --silent
-    #1034058 variants and 3954 people pass filters and QC.
-
-  #interim clean
-  #rm -f ${dirI}/temp_2016_cleaning_2_snps ${dirI}/temp_${raw_data}.*
-
 #done #loop to turn on/off
 
 ########################################################################
-#2.1 HEIDELBERG
+#2.1 Initial cleaning for ENDO set which will be used as controls
 ########################################################################
 #21/07/2016 as doesn't require additional sets (cleaning, aligning the QMEGA_omni set requires SDH) set this up seperately
-for x in #1
-do
+#for x in #1
+#do
   #need to fix hh SNPs, sexcheck etc. Fix sex first before fixing hh as many are missing any sex info which will bork hh checks
-  echo -e "\nSeperating Heidelberg samples into individual case/controls sets, fixing missing sex and removing het haploid SNPs etc...\n"
+  echo -e "\nFixing missing sex and removing het haploid SNPs etc for ENDO set...\n"
 
-  plink_1.90 --threads 1 --bfile  ${dirJG}/${raw_data3} --check-sex --out ${dirI}/temp_${raw_data3} --silent
-    #--check-sex: 6958 Xchr and 0 Ychr variant(s) scanned, 373 problems detected.
+  plink_1.90 --threads 1 --bfile  ${dirI}/${raw_data3} --check-sex --out ${dirI}/temp_${raw_data3} --silent
 
-  echo -e "\nCheck sex results for ${raw_data3} : showing `grep -c "PROBLEM" ${dirI}/temp_${raw_data3}.sexcheck` PROBLEMS. Removing failed, correcting missing\n"
-    #373
+  echo -e "\nCheck sex results for ${raw_data3} : showing `grep -c "PROBLEM" ${dirI}/temp_${raw_data3}.sexcheck` PROBLEMS\n"
+
+  if [[ `grep -c "PROBLEM" ${dirI}/temp_${raw_data3}.sexcheck` != 0 ]]
+  then
   awk '$4==0 {print $1,$2}' ${dirI}/temp_${raw_data3}.sexcheck > ${dirI}/temp_${raw_data3}.sexcheck_remove; wc -l ${dirI}/temp_${raw_data3}.sexcheck_remove
   echo ""
     #3
   awk '$5=="PROBLEM" && $4!="0" {print $1,$2,$4}' ${dirI}/temp_${raw_data3}.sexcheck > ${dirI}/temp_${raw_data3}.sexcheck_update; wc -l ${dirI}/temp_${raw_data3}.sexcheck_update
-    #370
+    
   echo ""
-  plink_1.90 --threads 1 --bfile  ${dirJG}/${raw_data3} --make-bed --out ${dirI}/temp_${raw_data3} --remove ${dirI}/temp_${raw_data3}.sexcheck_remove --update-sex ${dirI}/temp_${raw_data3}.sexcheck_update --silent
-    #2441 phenotype values loaded from .fam. --update-sex: 370 people updated --remove: 2438 people remaining. 222482 variants and 2438 people pass filters and QC.
-  #not sure when hh SNPs are generated relative to updating sex so regenerate them again to make sure (just run freq)
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data3} --freq --out ${dirI}/temp_${raw_data3} --silent
-    #Warning: 73970 het. haploid genotypes present
-  #check if any fall in hg18 NON PAR regions 
+  plink_1.90 --threads 1 --bfile  ${dirI}/${raw_data3} --make-bed --out ${dirI}/temp_${raw_data3} --remove ${dirI}/temp_${raw_data3}.sexcheck_remove --update-sex ${dirI}/temp_${raw_data3}.sexcheck_update --silent
+  else
+  plink_1.90 --threads 1 --bfile  ${dirI}/${raw_data3} --make-bed --out ${dirI}/temp_${raw_data3}
+  fi
+  
+#not sure when hh SNPs are generated relative to updating sex so regenerate them again to make sure (just run freq)
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data3} --freq --out ${dirI}/temp_${raw_data3} --silent
+  
+  if [ -e ${dirI}/temp_${raw_data3}.hh ] 
+  then
   echo ""
   awk '{print $3}' ${dirI}/temp_${raw_data3}.hh | sort | uniq > ${dirI}/temp_${raw_data3}.hh_snps; wc -l ${dirI}/temp_${raw_data3}.hh_snps
-    #698
+    #
   #do any fall in the hg18 PAR boundaries
   echo ""
-  awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_${raw_data3}.hh_snps ${dirJG}/${raw_data3}.bim | awk '($1==23 && ($4 >= 1 && $4 <= 2709520)) ||($1==23 && ($4 >= 154584238 && $4 <= 154913754)) || ($1==24 && ($4 >= 1 && $4 <= 2709520)) || ($1==24 && ($4 >= 57443438 && $4 <= 57772954))' | wc -l
-    #0; so remove
-  #as above was still getting the 'non-missing Y errors'; in melanoma.bim found these to be single calls scattered across SNPs, not worth following up, so get rid of those with set-hh-missing
+  awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_${raw_data3}.hh_snps ${dirI}/${raw_data3}.bim | awk '($1==23 && ($4 >= 1 && $4 <= 2709520)) ||($1==23 && ($4 >= 154584238 && $4 <= 154913754)) || ($1==24 && ($4 >= 1 && $4 <= 2709520)) || ($1==24 && ($4 >= 57443438 && $4 <= 57772954))' | wc -l
+    
   plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data3} --exclude ${dirI}/temp_${raw_data3}.hh_snps --make-bed --out  ${dirI}/temp_${raw_data3}_2 --set-hh-missing --silent
-    #--exclude: 221784 variants remaining.
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data3}_2 --filter-controls  --make-bed --out ${dirI}/temp_2016_cleaning_HEIDELBERG_controls --silent
-    #221784 variants and 1221 people pass filters and QC.
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data3}_2 --filter-cases --make-bed --out ${dirI}/temp_2016_cleaning_HEIDELBERG_cases --silent
-    #221784 variants and 1217 people pass filters and QC.
+  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data3}_2 --make-bed --out ${dirI}/temp_${raw_data3}
+  echo -e "\nENDO with hh and sex errors fixed."  
+  else
+  echo -e "\nENDO does not have hh and sex errors."
+  fi
+  
+  rm -f ${dirI}/temp_${raw_data3}_2.*
 
-  echo -e "\nHeidelberg extracted to case and control, with hh and sex errors fixed."
-  rm -f ${dirI}/temp_${raw_data3}.* ${dirI}/temp_${raw_data3}_2.*
-
-done #loop to turn on/off
+#done #loop to turn on/off
 
 ########################################################################
 #2.2 WAMHS + IBD + Glaucoma
 ########################################################################
 #21/07/2016 set up WAMHS seperately. Not imputed with BEACON this time as Puya is doing that himself.
-for x in #1
-do
-  echo -e "\nExtracting initial IBD data for WAMHS\n"
+#for x in #1
+#do
+  #echo -e "\nExtracting initial IBD data for WAMHS\n"
   #this is a simplified version of the initial steps in /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/CIDR_WAMHS/IBD_omni_express_exome/script_to_clean_IBD_GWAS_data.sh
   #fix Gabriel's replacement of all spaces in IDs with underscores, even if just spaces in ID fields
-  sed 's/___/_/g' ${dirJI}/${raw_data4}.fam > ${dirI}/temp_${raw_data4}_fam; wc -l ${dirI}/temp_${raw_data4}_fam
+  #sed 's/___/_/g' ${dirJI}/${raw_data4}.fam > ${dirI}/temp_${raw_data4}_fam; wc -l ${dirI}/temp_${raw_data4}_fam
     #960
   #there are a bunch of control samples run on each array (e.g. CON_5738_10 is on array 10). I had a way of making these unique. Not sure why, but may as well keep this
-  for i in {1..10}
-  do
-    sed -i "s/_${i} / /g"  ${dirI}/temp_${raw_data4}_fam
-  done
+  #for i in {1..10}
+  #do
+    #sed -i "s/_${i} / /g"  ${dirI}/temp_${raw_data4}_fam
+  #done
 
-  echo ""
-  head -5 ${dirJI}/${raw_data4}.fam
-  echo ""
-  head -5 ${dirI}/temp_${raw_data4}_fam
+  #echo ""
+  #head -5 ${dirJI}/${raw_data4}.fam
+  #echo ""
+  #head -5 ${dirI}/temp_${raw_data4}_fam
 
-  for i in CON_216 CON_1490 CON_1652
-  do
-    var_A=`grep -c ${i} ${dirJI}/${IBD_phenotypes} `
-      for k in `seq 1 ${var_A}`
-      do
+  #for i in CON_216 CON_1490 CON_1652
+  #do
+    #var_A=`grep -c ${i} ${dirJI}/${IBD_phenotypes} `
+      #for k in `seq 1 ${var_A}`
+      #do
         #replace the duplicate ID with the unique ID FID first
-        sed -i "0,/${i} /s/${i} /${i}_${k} /" ${dirI}/temp_${raw_data4}_fam
+       # sed -i "0,/${i} /s/${i} /${i}_${k} /" ${dirI}/temp_${raw_data4}_fam
         #then IID
-        sed -i "0,/ ${i} /s/ ${i} / ${i}_${k} /" ${dirI}/temp_${raw_data4}_fam
-      done #number of occurances
-  done #loop to fix control names
-  echo ""
-  grep 'CON_216\|CON_1490\|CON_1652' ${dirJI}/${raw_data4}.fam
-  echo ""
-  grep 'CON_216\|CON_1490\|CON_1652' ${dirI}/temp_${raw_data4}_fam
-  echo ""
-  awk '{print $1,$2,$3,$4,$5,1}' ${dirI}/temp_${raw_data4}_fam > ${dirI}/temp_${raw_data4}_as_controls.fam; wc -l ${dirI}/temp_${raw_data4}_as_controls.fam  
+        #sed -i "0,/ ${i} /s/ ${i} / ${i}_${k} /" ${dirI}/temp_${raw_data4}_fam
+      #done #number of occurances
+  #done #loop to fix control names
+  #echo ""
+  #grep 'CON_216\|CON_1490\|CON_1652' ${dirJI}/${raw_data4}.fam
+  #echo ""
+  #grep 'CON_216\|CON_1490\|CON_1652' ${dirI}/temp_${raw_data4}_fam
+  #echo ""
+  #awk '{print $1,$2,$3,$4,$5,1}' ${dirI}/temp_${raw_data4}_fam > ${dirI}/temp_${raw_data4}_as_controls.fam; wc -l ${dirI}/temp_${raw_data4}_as_controls.fam  
     #960
   #now I had a fancy process in /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/CIDR_WAMHS/IBD_omni_express_exome/script_to_clean_IBD_GWAS_data.sh that used the many, many controls to find discordant SNPs. I don't see a reason to repeat that, just use the list there and drop the duplicate controls used to do that
-  echo -e "\nRemoving duplicate control samples from the IBD data, as well as SNPs previously found to be discordant in the duplicate control samples\n"  
-  plink_1.90 --threads 1 --bed ${dirJI}/${raw_data4}.bed --bim ${dirJI}/${raw_data4}.bim --fam ${dirI}/temp_${raw_data4}_as_controls.fam --remove ${dirJI}/IBD_duplicate_IDs.txt --exclude ${dirJI}/IBD_snps_discordant_between_replicates.txt --make-bed --out ${dirI}/temp_${raw_data4} --silent
+  #echo -e "\nRemoving duplicate control samples from the IBD data, as well as SNPs previously found to be discordant in the duplicate control samples\n"  
+  #plink_1.90 --threads 1 --bed ${dirJI}/${raw_data4}.bed --bim ${dirJI}/${raw_data4}.bim --fam ${dirI}/temp_${raw_data4}_as_controls.fam --remove ${dirJI}/IBD_duplicate_IDs.txt --exclude ${dirJI}/IBD_snps_discordant_between_replicates.txt --make-bed --out ${dirI}/temp_${raw_data4} --silent
     #951117 variants loaded from .bim file. --exclude: 951101 variants remaining. --remove: 930 people remaining. 951101 variants and 930 people pass filters and QC.
-  echo -e "\nChecking sex for IBD data"
+  #echo -e "\nChecking sex for IBD data"
   #now check sex
-  plink_1.90 --threads 1 --bfile  ${dirI}/temp_${raw_data4} --check-sex --out ${dirI}/temp_${raw_data4} --silent
+  #plink_1.90 --threads 1 --bfile  ${dirI}/temp_${raw_data4} --check-sex --out ${dirI}/temp_${raw_data4} --silent
     #--check-sex: 17013 Xchr and 0 Ychr variant(s) scanned, 1 problem detected.
 
-  echo -e "\nCheck sex results for ${raw_data4} : showing `grep -c "PROBLEM" ${dirI}/temp_${raw_data4}.sexcheck` PROBLEMS. Removing failed, correcting missing\n"
+  #echo -e "\nCheck sex results for ${raw_data4} : showing `grep -c "PROBLEM" ${dirI}/temp_${raw_data4}.sexcheck` PROBLEMS. Removing failed, correcting missing\n"
     #1
-  awk '$4==0 {print $1,$2}' ${dirI}/temp_${raw_data4}.sexcheck > ${dirI}/temp_${raw_data4}.sexcheck_remove; wc -l ${dirI}/temp_${raw_data4}.sexcheck_remove
-  echo ""
+  #awk '$4==0 {print $1,$2}' ${dirI}/temp_${raw_data4}.sexcheck > ${dirI}/temp_${raw_data4}.sexcheck_remove; wc -l ${dirI}/temp_${raw_data4}.sexcheck_remove
+  #echo ""
     #1
-  awk '$5=="PROBLEM" && $4!="0" {print $1,$2,$4}' ${dirI}/temp_${raw_data4}.sexcheck > ${dirI}/temp_${raw_data4}.sexcheck_update; wc -l ${dirI}/temp_${raw_data4}.sexcheck_update
+  #awk '$5=="PROBLEM" && $4!="0" {print $1,$2,$4}' ${dirI}/temp_${raw_data4}.sexcheck > ${dirI}/temp_${raw_data4}.sexcheck_update; wc -l ${dirI}/temp_${raw_data4}.sexcheck_update
     #0
-  echo ""
-  plink_1.90 --threads 1 --bfile  ${dirI}/temp_${raw_data4} --make-bed --out ${dirI}/temp_${raw_data4}_2 --remove ${dirI}/temp_${raw_data4}.sexcheck_remove --update-sex ${dirI}/temp_${raw_data4}.sexcheck_update --silent
+  #echo ""
+  #plink_1.90 --threads 1 --bfile  ${dirI}/temp_${raw_data4} --make-bed --out ${dirI}/temp_${raw_data4}_2 --remove ${dirI}/temp_${raw_data4}.sexcheck_remove --update-sex ${dirI}/temp_${raw_data4}.sexcheck_update --silent
    #930 phenotype values loaded from .fam --update-sex: 0 people updated. --remove: 929 people remaining.
    #not sure when hh SNPs are generated relative to updating sex so regenerate them again to make sure (just run freq)
-   plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data4}_2 --freq --out ${dirI}/temp_${raw_data4} --silent
+   #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data4}_2 --freq --out ${dirI}/temp_${raw_data4} --silent
      #Warning: 60547 het. haploid genotypes present
   #check if any fall in hg19 NON PAR regions 
-  awk '{print $3}' ${dirI}/temp_${raw_data4}.hh | sort | uniq > ${dirI}/temp_${raw_data4}.hh_snps; wc -l ${dirI}/temp_${raw_data4}.hh_snps
+  #awk '{print $3}' ${dirI}/temp_${raw_data4}.hh | sort | uniq > ${dirI}/temp_${raw_data4}.hh_snps; wc -l ${dirI}/temp_${raw_data4}.hh_snps
     #296
   #do any fall in the hg19 PAR boundaries
-  echo ""
-  awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_${raw_data4}.hh_snps ${dirJI}/${raw_data4}.bim | awk '($1==23 && ($4 >= 60001 && $4 <= 2699520)) ||($1==23 && ($4 >= 154931044 && $4 <= 155260560)) || ($1==24 && ($4 >= 10001 && $4 <= 2649520)) || ($1==24 && ($4 >= 59034050 && $4 <= 59363566))' | wc -l
-  echo ""
+  #echo ""
+  #awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_${raw_data4}.hh_snps ${dirJI}/${raw_data4}.bim | awk '($1==23 && ($4 >= 60001 && $4 <= 2699520)) ||($1==23 && ($4 >= 154931044 && $4 <= 155260560)) || ($1==24 && ($4 >= 10001 && $4 <= 2649520)) || ($1==24 && ($4 >= 59034050 && $4 <= 59363566))' | wc -l
+  #echo ""
     #36, this is new. Update them to chr25, exclude the rest
-  awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_${raw_data4}.hh_snps ${dirJI}/${raw_data4}.bim | awk '($1==23 && ($4 >= 60001 && $4 <= 2699520)) ||($1==23 && ($4 >= 154931044 && $4 <= 155260560)) || ($1==24 && ($4 >= 10001 && $4 <= 2649520)) || ($1==24 && ($4 >= 59034050 && $4 <= 59363566)) {print $2,25}' > ${dirI}/temp_${raw_data4}_PAR_snps;wc -l ${dirI}/temp_${raw_data4}_PAR_snps
+  #awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_${raw_data4}.hh_snps ${dirJI}/${raw_data4}.bim | awk '($1==23 && ($4 >= 60001 && $4 <= 2699520)) ||($1==23 && ($4 >= 154931044 && $4 <= 155260560)) || ($1==24 && ($4 >= 10001 && $4 <= 2649520)) || ($1==24 && ($4 >= 59034050 && $4 <= 59363566)) {print $2,25}' > ${dirI}/temp_${raw_data4}_PAR_snps;wc -l ${dirI}/temp_${raw_data4}_PAR_snps
     #36
-  echo ""
-  awk 'NR==FNR {a[$1];next} !($1 in a)' ${dirI}/temp_${raw_data4}_PAR_snps ${dirI}/temp_${raw_data4}.hh_snps > ${dirI}/temp_${raw_data4}.hh_snps_exclude; wc -l ${dirI}/temp_${raw_data4}.hh_snps_exclude
+  #echo ""
+  #awk 'NR==FNR {a[$1];next} !($1 in a)' ${dirI}/temp_${raw_data4}_PAR_snps ${dirI}/temp_${raw_data4}.hh_snps > ${dirI}/temp_${raw_data4}.hh_snps_exclude; wc -l ${dirI}/temp_${raw_data4}.hh_snps_exclude
     #260
   #as above was still getting the 'non-missing Y errors'; in melanoma.bim found these to be single calls scattered across SNPs, not worth following up. Normally would run this now with set-hh-missing but not sure of order of that with update-chr so run again after
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data4}_2 --update-chr ${dirI}/temp_${raw_data4}_PAR_snps --exclude ${dirI}/temp_${raw_data4}.hh_snps_exclude --make-bed --out  ${dirI}/temp_${raw_data4} --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data4}_2 --update-chr ${dirI}/temp_${raw_data4}_PAR_snps --exclude ${dirI}/temp_${raw_data4}.hh_snps_exclude --make-bed --out  ${dirI}/temp_${raw_data4} --silent
     #951101 variants loaded from .bim file. --exclude: 950841 variants remaining --update-chr: 36 values updated.
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data4} --set-hh-missing --make-bed --out ${dirI}/temp_${raw_data4}_2 --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data4} --set-hh-missing --make-bed --out ${dirI}/temp_${raw_data4}_2 --silent
     
   #now there are a bunch of SNPs with B alleles - which means gabriel couldn't remap them. Are they all monomorphic?
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data4}_2 --freq --out ${dirI}/temp_${raw_data4} --silent
-  awk '($3=="B" || $4=="B") && $5>0' ${dirI}/temp_${raw_data4}.frq | wc -l
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data4}_2 --freq --out ${dirI}/temp_${raw_data4} --silent
+  #awk '($3=="B" || $4=="B") && $5>0' ${dirI}/temp_${raw_data4}.frq | wc -l
     #3983 - ffs
 
   #have what I be the update_allele file from http://www.well.ox.ac.uk/~wrayner/strand/ABtoTOPstrand.html
   #zgrep kgp22785494 ${dirI}/HumanOmniExpress-12v1-1_B.update_alleles.txt.gHumanOmniExpressExome-8-v1-2-B.update_alleles.txt.gz 
   #SNPs aren't in there, but messing around with the T/B SNPs that have chr and bp position it looks like (a) most are in 1kg so can remap them. I just realised there may be the reverse - SNPs where the B has been remapped, but not the A - can't readily find these other than them being treated as triplicate SNPs
-  awk 'NR==FNR {a[$2]=$3" "$4" "$5" "$6;next} $2 in a {print $0,a[$2]}' <(awk '($3=="B" || $4=="B") && $5>0' ${dirI}/temp_${raw_data4}.frq) <( sed 's/\t/ /g' ${dirI}/temp_${raw_data4}_2.bim | sed 's/ \+/ /g' | sed 's/^ //g' ) > ${dirI}/temp_${raw_data4}_B_allele_remap_1; wc -l ${dirI}/temp_${raw_data4}_B_allele_remap_1 
+  #awk 'NR==FNR {a[$2]=$3" "$4" "$5" "$6;next} $2 in a {print $0,a[$2]}' <(awk '($3=="B" || $4=="B") && $5>0' ${dirI}/temp_${raw_data4}.frq) <( sed 's/\t/ /g' ${dirI}/temp_${raw_data4}_2.bim | sed 's/ \+/ /g' | sed 's/^ //g' ) > ${dirI}/temp_${raw_data4}_B_allele_remap_1; wc -l ${dirI}/temp_${raw_data4}_B_allele_remap_1 
     #3983
   #now map to 1kg (this will drop those without bp info
-  awk 'NR==FNR {a[$1,$4]=$0;next} ($1,$3) in a {print a[$1,$3],$0}' ${dirI}/temp_${raw_data4}_B_allele_remap_1 <(gunzip -dc ${dirI}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) > ${dirI}/temp_${raw_data4}_B_allele_remap_2; wc -l ${dirI}/temp_${raw_data4}_B_allele_remap_2
+  #awk 'NR==FNR {a[$1,$4]=$0;next} ($1,$3) in a {print a[$1,$3],$0}' ${dirI}/temp_${raw_data4}_B_allele_remap_1 <(gunzip -dc ${dirI}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) > ${dirI}/temp_${raw_data4}_B_allele_remap_2; wc -l ${dirI}/temp_${raw_data4}_B_allele_remap_2
    #3797 < expected a few for for overlapping indels, hence merging 1kg onto the data not the other way around (otherwise might miss real pairing)
 
-   cd $dirI
+   #cd $dirI
    #same strand, same allele - e.g. T B 0.03983 A T 0.0422. Need to filter out indels in the 1kg data. high maf ambigious, and then try work out from allele matching and freq matching what the B allele is, and may as well flip it to match 1kg while in here (as need to check for that anyway to make sense of the matches)
-  awk '{
-    if( length($14)==1 && length($15)==1 && $23 < '''${MAF}''' && ( ( $14=="T" && $15=="A" ) || ( $14=="A" && $15=="T" ) || ( $14=="G" && $15=="C" ) || ( $14=="C" && $15=="G" ) ) && ( ( $5==$15) || ( $6==$14) ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) )
-      { print $2,$5,$6,$15,$14 > "temp_IBD_B_alleles_ambigious_aligned_same_allele"};
-    if( length($14)==1 && length($15)==1 && $23 < '''${MAF}''' && ( ( $14=="T" && $15=="A" ) || ( $14=="A" && $15=="T" ) || ( $14=="G" && $15=="C" ) || ( $14=="C" && $15=="G" ) ) && ( ( $5==$14 ) || ( $6==$15) ) && ( ($9 - ( 1- $19 )) > -('''${DIFF}''') ) && ( ($9 - ( 1- $19 ) ) < '''${DIFF}''' ) )
-      { print $2,$5,$6,$14,$15 > "temp_IBD_B_alleles_ambigious_aligned_other_allele"};
-    if( length($14)==1 && length($15)==1 && $23 < '''${MAF}''' && ( ( $14=="T" && $15=="A" ) || ( $14=="A" && $15=="T" ) || ( $14=="G" && $15=="C" ) || ( $14=="C" && $15=="G" ) ) && ( ( $5==$14 ) || ( $6==$15) ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) )
-      { print $2,$5,$6,$15,$14 > "temp_IBD_B_alleles_ambigious_flipped_same_allele"};
-    if( length($14)==1 && length($15)==1 && $23 < '''${MAF}''' && ( ( $14=="T" && $15=="A" ) || ( $14=="A" && $15=="T" ) || ( $14=="G" && $15=="C" ) || ( $14=="C" && $15=="G" ) ) && ( ( $5==$15) || ( $6==$14) ) && ( ($9 - ( 1- $19 )) > -('''${DIFF}''') ) && ( ($9 - ( 1- $19 ) ) < '''${DIFF}''' ) )
-      { print $2,$5,$6,$14,$15 > "temp_IBD_B_alleles_ambigious_flipped_other_allele"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( $5==$15 || $6==$14) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) )
-      { print $2,$5,$6,$15,$14 > "temp_IBD_B_alleles_aligned_same_allele"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( $5==$14 || $6==$15) && ( ($9 - ( 1- $19 )) > -('''${DIFF}''') ) && ( ($9 - ( 1- $19 ) ) < '''${DIFF}''' ) )
-      { print $2,$5,$6,$14,$15 > "temp_IBD_B_alleles_aligned_other_allele"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) && ( ( $5=="T" && $15=="A" && $14=="G" ) || ($6=="C" && $15=="A" && $14=="G" ) ) ) 
-      { print $2,$5,$6,"T","C" > "temp_IBD_B_alleles_flipped_same_allele_AG"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) && ( ( $5=="T" && $15=="A" && $14=="C" ) || ($6=="G" && $15=="A" && $14=="C" ) ) )
-      { print $2,$5,$6,"T","G" > "temp_IBD_B_alleles_flipped_same_allele_AC"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) && ( ( $5=="A" && $15=="T" && $14=="G" ) || ( $6=="C" && $15=="T" && $14=="G" ) ) )
-      { print $2,$5,$6,"A","C" > "temp_IBD_B_alleles_flipped_same_allele_TG"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) && ( ( $5=="A" && $15=="T" && $14=="C" ) || ( $6=="G" && $15=="T" && $14=="C" ) ) )
-      { print $2,$5,$6,"A","G" > "temp_IBD_B_alleles_flipped_same_allele_TC"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) && ( ( $5=="C" && $15=="G" && $14=="A" ) || ( $6=="T" && $15=="G" && $14=="A" ) ) )
-      { print $2,$5,$6,"C","T" > "temp_IBD_B_alleles_flipped_same_allele_GA"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) && ( ( $5=="C" && $15=="G" && $14=="T" ) || ( $6=="A" && $15=="G" && $14=="T" ) ) )
-      { print $2,$5,$6,"C","A" > "temp_IBD_B_alleles_flipped_same_allele_GT"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) && ( ( $5=="G" && $15=="C" && $14=="A" ) || ( $6=="T" && $15=="C" && $14=="A" ) ) )
-      { print $2,$5,$6,"G","T" > "temp_IBD_B_alleles_flipped_same_allele_CA"};
-   if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) && ( ( $5=="G" && $15=="C" && $14=="T" ) || ( $6=="A" && $15=="C" && $14=="T" ) ) )
-      { print $2,$5,$6,"G","A" > "temp_IBD_B_alleles_flipped_same_allele_CT"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - ( 1 - $19 ) ) > -('''${DIFF}''') ) && ( ($9 - ( 1 - $19 ) ) < '''${DIFF}''' ) && ( ( $5=="T" && $14=="A" && $15=="G" ) || ( $6=="C" && $14=="A" && $15=="G" ) ) )
-      { print $2,$5,$6,"T","C" > "temp_IBD_B_alleles_flipped_other_allele_GA"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - ( 1 - $19 ) ) > -('''${DIFF}''') ) && ( ($9 - ( 1 - $19 ) ) < '''${DIFF}''' ) && ( ( $5=="T" && $14=="A" && $15=="C" ) || ( $6=="G" && $14=="A" && $15=="C" ) ) )
-      { print $2,$5,$6,"T","G" > "temp_IBD_B_alleles_flipped_other_allele_CA"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - ( 1 - $19 ) ) > -('''${DIFF}''') ) && ( ($9 - ( 1 - $19 ) ) < '''${DIFF}''' ) && ( ( $5=="A" && $14=="T" && $15=="G" ) || ( $6=="C" && $14=="T" && $15=="G" ) ) )
-      { print $2,$5,$6,"A","C" > "temp_IBD_B_alleles_flipped_other_allele_GT"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - ( 1 - $19 ) ) > -('''${DIFF}''') ) && ( ($9 - ( 1 - $19 ) ) < '''${DIFF}''' ) && ( ( $5=="A" && $14=="T" && $15=="C" ) || ( $6=="G" && $14=="T" && $15=="C" ) ) )
-      { print $2,$5,$6,"A","G" > "temp_IBD_B_alleles_flipped_other_allele_CT"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - ( 1 - $19 ) ) > -('''${DIFF}''') ) && ( ($9 - ( 1 - $19 ) ) < '''${DIFF}''' ) && ( ( $5=="C" && $14=="G" && $15=="A" ) || ( $6=="T" && $14=="G" && $15=="A" ) ) )
-      { print $2,$5,$6,"C","T" > "temp_IBD_B_alleles_flipped_other_allele_AG"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - ( 1 - $19 ) ) > -('''${DIFF}''') ) && ( ($9 - ( 1 - $19 ) ) < '''${DIFF}''' ) && ( ( $5=="C" && $14=="G" && $15=="T" ) || ( $6=="A" && $14=="G" && $15=="T" ) ) )
-      { print $2,$5,$6,"C","A" > "temp_IBD_B_alleles_flipped_other_allele_TG"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - ( 1 - $19 ) ) > -('''${DIFF}''') ) && ( ($9 - ( 1 - $19 ) ) < '''${DIFF}''' ) && ( ( $5=="G" && $14=="C" && $15=="A" ) || ( $6=="T" && $14=="C" && $15=="A" ) ) )
-      { print $2,$5,$6,"G","T" > "temp_IBD_B_alleles_flipped_other_allele_AC"};
-    if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - ( 1 - $19 ) ) > -('''${DIFF}''') ) && ( ($9 - ( 1 - $19 ) ) < '''${DIFF}''' ) && ( ( $5=="G" && $14=="C" && $15=="T" ) || ( $6=="A" && $14=="C" && $15=="T" ) ) )
-      { print $2,$5,$6,"G","A" > "temp_IBD_B_alleles_flipped_other_allele_TC"};
-}' ${dirI}/temp_${raw_data4}_B_allele_remap_2
-  echo ""
-  cat temp_IBD_B_alleles_ambigious_aligned_same_allele temp_IBD_B_alleles_ambigious_aligned_other_allele temp_IBD_B_alleles_ambigious_flipped_same_allele temp_IBD_B_alleles_ambigious_flipped_other_allele temp_IBD_B_alleles_aligned_same_allele temp_IBD_B_alleles_aligned_other_allele temp_IBD_B_alleles_flipped_same_allele_AG temp_IBD_B_alleles_flipped_same_allele_AC temp_IBD_B_alleles_flipped_same_allele_TG temp_IBD_B_alleles_flipped_same_allele_TC temp_IBD_B_alleles_flipped_same_allele_GA temp_IBD_B_alleles_flipped_same_allele_GT temp_IBD_B_alleles_flipped_same_allele_CA temp_IBD_B_alleles_flipped_same_allele_CT temp_IBD_B_alleles_flipped_other_allele_GA temp_IBD_B_alleles_flipped_other_allele_CA temp_IBD_B_alleles_flipped_other_allele_GT temp_IBD_B_alleles_flipped_other_allele_CT temp_IBD_B_alleles_flipped_other_allele_AG temp_IBD_B_alleles_flipped_other_allele_TG temp_IBD_B_alleles_flipped_other_allele_AC temp_IBD_B_alleles_flipped_other_allele_TC 2> /dev/null | wc -l 
+  #awk '{
+   # if( length($14)==1 && length($15)==1 && $23 < '''${MAF}''' && ( ( $14=="T" && $15=="A" ) || ( $14=="A" && $15=="T" ) || ( $14=="G" && $15=="C" ) || ( $14=="C" && $15=="G" ) ) && ( ( $5==$15) || ( $6==$14) ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) )
+    #  { print $2,$5,$6,$15,$14 > "temp_IBD_B_alleles_ambigious_aligned_same_allele"};
+   # if( length($14)==1 && length($15)==1 && $23 < '''${MAF}''' && ( ( $14=="T" && $15=="A" ) || ( $14=="A" && $15=="T" ) || ( $14=="G" && $15=="C" ) || ( $14=="C" && $15=="G" ) ) && ( ( $5==$14 ) || ( $6==$15) ) && ( ($9 - ( 1- $19 )) > -('''${DIFF}''') ) && ( ($9 - ( 1- $19 ) ) < '''${DIFF}''' ) )
+    #  { print $2,$5,$6,$14,$15 > "temp_IBD_B_alleles_ambigious_aligned_other_allele"};
+  #  if( length($14)==1 && length($15)==1 && $23 < '''${MAF}''' && ( ( $14=="T" && $15=="A" ) || ( $14=="A" && $15=="T" ) || ( $14=="G" && $15=="C" ) || ( $14=="C" && $15=="G" ) ) && ( ( $5==$14 ) || ( $6==$15) ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) )
+   #   { print $2,$5,$6,$15,$14 > "temp_IBD_B_alleles_ambigious_flipped_same_allele"};
+  #  if( length($14)==1 && length($15)==1 && $23 < '''${MAF}''' && ( ( $14=="T" && $15=="A" ) || ( $14=="A" && $15=="T" ) || ( $14=="G" && $15=="C" ) || ( $14=="C" && $15=="G" ) ) && ( ( $5==$15) || ( $6==$14) ) && ( ($9 - ( 1- $19 )) > -('''${DIFF}''') ) && ( ($9 - ( 1- $19 ) ) < '''${DIFF}''' ) )
+   #   { print $2,$5,$6,$14,$15 > "temp_IBD_B_alleles_ambigious_flipped_other_allele"};
+  #  if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( $5==$15 || $6==$14) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) )
+    #  { print $2,$5,$6,$15,$14 > "temp_IBD_B_alleles_aligned_same_allele"};
+   # if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( $5==$14 || $6==$15) && ( ($9 - ( 1- $19 )) > -('''${DIFF}''') ) && ( ($9 - ( 1- $19 ) ) < '''${DIFF}''' ) )
+    #  { print $2,$5,$6,$14,$15 > "temp_IBD_B_alleles_aligned_other_allele"};
+   # if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) && ( ( $5=="T" && $15=="A" && $14=="G" ) || ($6=="C" && $15=="A" && $14=="G" ) ) ) 
+    #  { print $2,$5,$6,"T","C" > "temp_IBD_B_alleles_flipped_same_allele_AG"};
+   # if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) && ( ( $5=="T" && $15=="A" && $14=="C" ) || ($6=="G" && $15=="A" && $14=="C" ) ) )
+  #    { print $2,$5,$6,"T","G" > "temp_IBD_B_alleles_flipped_same_allele_AC"};
+  #  if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) && ( ( $5=="A" && $15=="T" && $14=="G" ) || ( $6=="C" && $15=="T" && $14=="G" ) ) )
+   #   { print $2,$5,$6,"A","C" > "temp_IBD_B_alleles_flipped_same_allele_TG"};
+   # if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) && ( ( $5=="A" && $15=="T" && $14=="C" ) || ( $6=="G" && $15=="T" && $14=="C" ) ) )
+    #  { print $2,$5,$6,"A","G" > "temp_IBD_B_alleles_flipped_same_allele_TC"};
+  #  if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) && ( ( $5=="C" && $15=="G" && $14=="A" ) || ( $6=="T" && $15=="G" && $14=="A" ) ) )
+   #   { print $2,$5,$6,"C","T" > "temp_IBD_B_alleles_flipped_same_allele_GA"};
+   # if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) && ( ( $5=="C" && $15=="G" && $14=="T" ) || ( $6=="A" && $15=="G" && $14=="T" ) ) )
+    #  { print $2,$5,$6,"C","A" > "temp_IBD_B_alleles_flipped_same_allele_GT"};
+   # if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) && ( ( $5=="G" && $15=="C" && $14=="A" ) || ( $6=="T" && $15=="C" && $14=="A" ) ) )
+    #  { print $2,$5,$6,"G","T" > "temp_IBD_B_alleles_flipped_same_allele_CA"};
+  # if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - $19) > -('''${DIFF}''') ) && ( ($9 - $19) < '''${DIFF}''' ) && ( ( $5=="G" && $15=="C" && $14=="T" ) || ( $6=="A" && $15=="C" && $14=="T" ) ) )
+   #   { print $2,$5,$6,"G","A" > "temp_IBD_B_alleles_flipped_same_allele_CT"};
+   # if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - ( 1 - $19 ) ) > -('''${DIFF}''') ) && ( ($9 - ( 1 - $19 ) ) < '''${DIFF}''' ) && ( ( $5=="T" && $14=="A" && $15=="G" ) || ( $6=="C" && $14=="A" && $15=="G" ) ) )
+   #   { print $2,$5,$6,"T","C" > "temp_IBD_B_alleles_flipped_other_allele_GA"};
+   # if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - ( 1 - $19 ) ) > -('''${DIFF}''') ) && ( ($9 - ( 1 - $19 ) ) < '''${DIFF}''' ) && ( ( $5=="T" && $14=="A" && $15=="C" ) || ( $6=="G" && $14=="A" && $15=="C" ) ) )
+    #  { print $2,$5,$6,"T","G" > "temp_IBD_B_alleles_flipped_other_allele_CA"};
+   # if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - ( 1 - $19 ) ) > -('''${DIFF}''') ) && ( ($9 - ( 1 - $19 ) ) < '''${DIFF}''' ) && ( ( $5=="A" && $14=="T" && $15=="G" ) || ( $6=="C" && $14=="T" && $15=="G" ) ) )
+    #  { print $2,$5,$6,"A","C" > "temp_IBD_B_alleles_flipped_other_allele_GT"};
+   # if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - ( 1 - $19 ) ) > -('''${DIFF}''') ) && ( ($9 - ( 1 - $19 ) ) < '''${DIFF}''' ) && ( ( $5=="A" && $14=="T" && $15=="C" ) || ( $6=="G" && $14=="T" && $15=="C" ) ) )
+   #   { print $2,$5,$6,"A","G" > "temp_IBD_B_alleles_flipped_other_allele_CT"};
+   # if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - ( 1 - $19 ) ) > -('''${DIFF}''') ) && ( ($9 - ( 1 - $19 ) ) < '''${DIFF}''' ) && ( ( $5=="C" && $14=="G" && $15=="A" ) || ( $6=="T" && $14=="G" && $15=="A" ) ) )
+    #  { print $2,$5,$6,"C","T" > "temp_IBD_B_alleles_flipped_other_allele_AG"};
+  #  if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - ( 1 - $19 ) ) > -('''${DIFF}''') ) && ( ($9 - ( 1 - $19 ) ) < '''${DIFF}''' ) && ( ( $5=="C" && $14=="G" && $15=="T" ) || ( $6=="A" && $14=="G" && $15=="T" ) ) )
+   #   { print $2,$5,$6,"C","A" > "temp_IBD_B_alleles_flipped_other_allele_TG"};
+   # if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - ( 1 - $19 ) ) > -('''${DIFF}''') ) && ( ($9 - ( 1 - $19 ) ) < '''${DIFF}''' ) && ( ( $5=="G" && $14=="C" && $15=="A" ) || ( $6=="T" && $14=="C" && $15=="A" ) ) )
+   #   { print $2,$5,$6,"G","T" > "temp_IBD_B_alleles_flipped_other_allele_AC"};
+   # if( length($14)==1 && length($15)==1 && !( $14=="T" && $15=="A" ) && !( $14=="A" && $15=="T" ) && !( $14=="G" && $15=="C" ) && !( $14=="C" && $15=="G" ) && ( ($9 - ( 1 - $19 ) ) > -('''${DIFF}''') ) && ( ($9 - ( 1 - $19 ) ) < '''${DIFF}''' ) && ( ( $5=="G" && $14=="C" && $15=="T" ) || ( $6=="A" && $14=="C" && $15=="T" ) ) )
+   #   { print $2,$5,$6,"G","A" > "temp_IBD_B_alleles_flipped_other_allele_TC"};
+#}' ${dirI}/temp_${raw_data4}_B_allele_remap_2
+ # echo ""
+ # cat temp_IBD_B_alleles_ambigious_aligned_same_allele temp_IBD_B_alleles_ambigious_aligned_other_allele temp_IBD_B_alleles_ambigious_flipped_same_allele temp_IBD_B_alleles_ambigious_flipped_other_allele temp_IBD_B_alleles_aligned_same_allele temp_IBD_B_alleles_aligned_other_allele temp_IBD_B_alleles_flipped_same_allele_AG temp_IBD_B_alleles_flipped_same_allele_AC temp_IBD_B_alleles_flipped_same_allele_TG temp_IBD_B_alleles_flipped_same_allele_TC temp_IBD_B_alleles_flipped_same_allele_GA temp_IBD_B_alleles_flipped_same_allele_GT temp_IBD_B_alleles_flipped_same_allele_CA temp_IBD_B_alleles_flipped_same_allele_CT temp_IBD_B_alleles_flipped_other_allele_GA temp_IBD_B_alleles_flipped_other_allele_CA temp_IBD_B_alleles_flipped_other_allele_GT temp_IBD_B_alleles_flipped_other_allele_CT temp_IBD_B_alleles_flipped_other_allele_AG temp_IBD_B_alleles_flipped_other_allele_TG temp_IBD_B_alleles_flipped_other_allele_AC temp_IBD_B_alleles_flipped_other_allele_TC 2> /dev/null | wc -l 
    #3419 
-  echo ""
+  #echo ""
   #check for an error - same SNP in more than one file
-  cat temp_IBD_B_alleles_ambigious_aligned_same_allele temp_IBD_B_alleles_ambigious_aligned_other_allele temp_IBD_B_alleles_ambigious_flipped_same_allele temp_IBD_B_alleles_ambigious_flipped_other_allele temp_IBD_B_alleles_aligned_same_allele temp_IBD_B_alleles_aligned_other_allele temp_IBD_B_alleles_flipped_same_allele_AG temp_IBD_B_alleles_flipped_same_allele_AC temp_IBD_B_alleles_flipped_same_allele_TG temp_IBD_B_alleles_flipped_same_allele_TC temp_IBD_B_alleles_flipped_same_allele_GA temp_IBD_B_alleles_flipped_same_allele_GT temp_IBD_B_alleles_flipped_same_allele_CA temp_IBD_B_alleles_flipped_same_allele_CT temp_IBD_B_alleles_flipped_other_allele_GA temp_IBD_B_alleles_flipped_other_allele_CA temp_IBD_B_alleles_flipped_other_allele_GT temp_IBD_B_alleles_flipped_other_allele_CT temp_IBD_B_alleles_flipped_other_allele_AG temp_IBD_B_alleles_flipped_other_allele_TG temp_IBD_B_alleles_flipped_other_allele_AC temp_IBD_B_alleles_flipped_other_allele_TC 2> /dev/null | cut -d" " -f1 | sort | uniq -d | wc -l 
+  # cat temp_IBD_B_alleles_ambigious_aligned_same_allele temp_IBD_B_alleles_ambigious_aligned_other_allele temp_IBD_B_alleles_ambigious_flipped_same_allele temp_IBD_B_alleles_ambigious_flipped_other_allele temp_IBD_B_alleles_aligned_same_allele temp_IBD_B_alleles_aligned_other_allele temp_IBD_B_alleles_flipped_same_allele_AG temp_IBD_B_alleles_flipped_same_allele_AC temp_IBD_B_alleles_flipped_same_allele_TG temp_IBD_B_alleles_flipped_same_allele_TC temp_IBD_B_alleles_flipped_same_allele_GA temp_IBD_B_alleles_flipped_same_allele_GT temp_IBD_B_alleles_flipped_same_allele_CA temp_IBD_B_alleles_flipped_same_allele_CT temp_IBD_B_alleles_flipped_other_allele_GA temp_IBD_B_alleles_flipped_other_allele_CA temp_IBD_B_alleles_flipped_other_allele_GT temp_IBD_B_alleles_flipped_other_allele_CT temp_IBD_B_alleles_flipped_other_allele_AG temp_IBD_B_alleles_flipped_other_allele_TG temp_IBD_B_alleles_flipped_other_allele_AC temp_IBD_B_alleles_flipped_other_allele_TC 2> /dev/null | cut -d" " -f1 | sort | uniq -d | wc -l 
   #0
-  echo ""
+  #echo ""
   #those not in there
-  awk 'NR==FNR {a[$1];next} !($2 in a )' <( cat temp_IBD_B_alleles_ambigious_aligned_same_allele temp_IBD_B_alleles_ambigious_aligned_other_allele temp_IBD_B_alleles_ambigious_flipped_same_allele temp_IBD_B_alleles_ambigious_flipped_other_allele temp_IBD_B_alleles_aligned_same_allele temp_IBD_B_alleles_aligned_other_allele temp_IBD_B_alleles_flipped_same_allele_AG temp_IBD_B_alleles_flipped_same_allele_AC temp_IBD_B_alleles_flipped_same_allele_TG temp_IBD_B_alleles_flipped_same_allele_TC temp_IBD_B_alleles_flipped_same_allele_GA temp_IBD_B_alleles_flipped_same_allele_GT temp_IBD_B_alleles_flipped_same_allele_CA temp_IBD_B_alleles_flipped_same_allele_CT temp_IBD_B_alleles_flipped_other_allele_GA temp_IBD_B_alleles_flipped_other_allele_CA temp_IBD_B_alleles_flipped_other_allele_GT temp_IBD_B_alleles_flipped_other_allele_CT temp_IBD_B_alleles_flipped_other_allele_AG temp_IBD_B_alleles_flipped_other_allele_TG temp_IBD_B_alleles_flipped_other_allele_AC temp_IBD_B_alleles_flipped_other_allele_TC 2> /dev/null ) ${dirI}/temp_${raw_data4}_B_allele_remap_2 | wc -l
+  #awk 'NR==FNR {a[$1];next} !($2 in a )' <( cat temp_IBD_B_alleles_ambigious_aligned_same_allele temp_IBD_B_alleles_ambigious_aligned_other_allele temp_IBD_B_alleles_ambigious_flipped_same_allele temp_IBD_B_alleles_ambigious_flipped_other_allele temp_IBD_B_alleles_aligned_same_allele temp_IBD_B_alleles_aligned_other_allele temp_IBD_B_alleles_flipped_same_allele_AG temp_IBD_B_alleles_flipped_same_allele_AC temp_IBD_B_alleles_flipped_same_allele_TG temp_IBD_B_alleles_flipped_same_allele_TC temp_IBD_B_alleles_flipped_same_allele_GA temp_IBD_B_alleles_flipped_same_allele_GT temp_IBD_B_alleles_flipped_same_allele_CA temp_IBD_B_alleles_flipped_same_allele_CT temp_IBD_B_alleles_flipped_other_allele_GA temp_IBD_B_alleles_flipped_other_allele_CA temp_IBD_B_alleles_flipped_other_allele_GT temp_IBD_B_alleles_flipped_other_allele_CT temp_IBD_B_alleles_flipped_other_allele_AG temp_IBD_B_alleles_flipped_other_allele_TG temp_IBD_B_alleles_flipped_other_allele_AC temp_IBD_B_alleles_flipped_other_allele_TC 2> /dev/null ) ${dirI}/temp_${raw_data4}_B_allele_remap_2 | wc -l
    #376
-  echo ""
+  #echo ""
   #the ones that don't match look like their make sense e.g. A B and G C. It might be that the A B was simply never remapped (as in it not "A" and an unmapped B) but diminishing returns etc, and I am then assuming I can match the two with nothing in commmon; what I am doing is potentially risk as it is (assuming that I can match a SNP with one allele). The following command filters out the ones not matches that shouldn't be matched, e.g. A B and G C. The remaining 13 that aren't matched still fail valid rules - are either pairing with an indel, or have a DIFF > 0.1. So function works. The decent N of A B and G C etc makes me bet that the A and B have both been unmatched but I can't asusme that...
-   awk 'NR==FNR {a[$1];next} !($2 in a )' <( cat temp_IBD_B_alleles_ambigious_aligned_same_allele temp_IBD_B_alleles_ambigious_aligned_other_allele temp_IBD_B_alleles_ambigious_flipped_same_allele temp_IBD_B_alleles_ambigious_flipped_other_allele temp_IBD_B_alleles_aligned_same_allele temp_IBD_B_alleles_aligned_other_allele temp_IBD_B_alleles_flipped_same_allele_AG temp_IBD_B_alleles_flipped_same_allele_AC temp_IBD_B_alleles_flipped_same_allele_TG temp_IBD_B_alleles_flipped_same_allele_TC temp_IBD_B_alleles_flipped_same_allele_GA temp_IBD_B_alleles_flipped_same_allele_GT temp_IBD_B_alleles_flipped_same_allele_CA temp_IBD_B_alleles_flipped_same_allele_CT temp_IBD_B_alleles_flipped_other_allele_GA temp_IBD_B_alleles_flipped_other_allele_CA temp_IBD_B_alleles_flipped_other_allele_GT temp_IBD_B_alleles_flipped_other_allele_CT temp_IBD_B_alleles_flipped_other_allele_AG temp_IBD_B_alleles_flipped_other_allele_TG temp_IBD_B_alleles_flipped_other_allele_AC temp_IBD_B_alleles_flipped_other_allele_TC 2> /dev/null ) ${dirI}/temp_${raw_data4}_B_allele_remap_2 | awk '!($5=="B" && $6=="T" && $14=="G" && $15=="C") && !( $5=="B" && $6=="T" && $14=="C" && $15=="G"  ) && !($5=="B" && $6=="A" && $14=="G" && $15=="C") && !( $5=="B" && $6=="A" && $14=="C" && $15=="G"  ) && !($5=="T" && $6=="B" && $14=="G" && $15=="C") && !( $5=="T" && $6=="B" && $14=="C" && $15=="G"  ) && !($5=="A" && $6=="B" && $14=="G" && $15=="C") && !( $5=="A" && $6=="B" && $14=="C" && $15=="G"  ) && $23 < '''${MAF}'''  ' | head
+   #awk 'NR==FNR {a[$1];next} !($2 in a )' <( cat temp_IBD_B_alleles_ambigious_aligned_same_allele temp_IBD_B_alleles_ambigious_aligned_other_allele temp_IBD_B_alleles_ambigious_flipped_same_allele temp_IBD_B_alleles_ambigious_flipped_other_allele temp_IBD_B_alleles_aligned_same_allele temp_IBD_B_alleles_aligned_other_allele temp_IBD_B_alleles_flipped_same_allele_AG temp_IBD_B_alleles_flipped_same_allele_AC temp_IBD_B_alleles_flipped_same_allele_TG temp_IBD_B_alleles_flipped_same_allele_TC temp_IBD_B_alleles_flipped_same_allele_GA temp_IBD_B_alleles_flipped_same_allele_GT temp_IBD_B_alleles_flipped_same_allele_CA temp_IBD_B_alleles_flipped_same_allele_CT temp_IBD_B_alleles_flipped_other_allele_GA temp_IBD_B_alleles_flipped_other_allele_CA temp_IBD_B_alleles_flipped_other_allele_GT temp_IBD_B_alleles_flipped_other_allele_CT temp_IBD_B_alleles_flipped_other_allele_AG temp_IBD_B_alleles_flipped_other_allele_TG temp_IBD_B_alleles_flipped_other_allele_AC temp_IBD_B_alleles_flipped_other_allele_TC 2> /dev/null ) ${dirI}/temp_${raw_data4}_B_allele_remap_2 | awk '!($5=="B" && $6=="T" && $14=="G" && $15=="C") && !( $5=="B" && $6=="T" && $14=="C" && $15=="G"  ) && !($5=="B" && $6=="A" && $14=="G" && $15=="C") && !( $5=="B" && $6=="A" && $14=="C" && $15=="G"  ) && !($5=="T" && $6=="B" && $14=="G" && $15=="C") && !( $5=="T" && $6=="B" && $14=="C" && $15=="G"  ) && !($5=="A" && $6=="B" && $14=="G" && $15=="C") && !( $5=="A" && $6=="B" && $14=="C" && $15=="G"  ) && $23 < '''${MAF}'''  ' | head
   
   #so allele update list
-  cat temp_IBD_B_alleles_ambigious_aligned_same_allele temp_IBD_B_alleles_ambigious_aligned_other_allele temp_IBD_B_alleles_ambigious_flipped_same_allele temp_IBD_B_alleles_ambigious_flipped_other_allele temp_IBD_B_alleles_aligned_same_allele temp_IBD_B_alleles_aligned_other_allele temp_IBD_B_alleles_flipped_same_allele_AG temp_IBD_B_alleles_flipped_same_allele_AC temp_IBD_B_alleles_flipped_same_allele_TG temp_IBD_B_alleles_flipped_same_allele_TC temp_IBD_B_alleles_flipped_same_allele_GA temp_IBD_B_alleles_flipped_same_allele_GT temp_IBD_B_alleles_flipped_same_allele_CA temp_IBD_B_alleles_flipped_same_allele_CT temp_IBD_B_alleles_flipped_other_allele_GA temp_IBD_B_alleles_flipped_other_allele_CA temp_IBD_B_alleles_flipped_other_allele_GT temp_IBD_B_alleles_flipped_other_allele_CT temp_IBD_B_alleles_flipped_other_allele_AG temp_IBD_B_alleles_flipped_other_allele_TG temp_IBD_B_alleles_flipped_other_allele_AC temp_IBD_B_alleles_flipped_other_allele_TC 2> /dev/null > ${dirI}/temp_${raw_data4}_B_allele_remap_file
+  #cat temp_IBD_B_alleles_ambigious_aligned_same_allele temp_IBD_B_alleles_ambigious_aligned_other_allele temp_IBD_B_alleles_ambigious_flipped_same_allele temp_IBD_B_alleles_ambigious_flipped_other_allele temp_IBD_B_alleles_aligned_same_allele temp_IBD_B_alleles_aligned_other_allele temp_IBD_B_alleles_flipped_same_allele_AG temp_IBD_B_alleles_flipped_same_allele_AC temp_IBD_B_alleles_flipped_same_allele_TG temp_IBD_B_alleles_flipped_same_allele_TC temp_IBD_B_alleles_flipped_same_allele_GA temp_IBD_B_alleles_flipped_same_allele_GT temp_IBD_B_alleles_flipped_same_allele_CA temp_IBD_B_alleles_flipped_same_allele_CT temp_IBD_B_alleles_flipped_other_allele_GA temp_IBD_B_alleles_flipped_other_allele_CA temp_IBD_B_alleles_flipped_other_allele_GT temp_IBD_B_alleles_flipped_other_allele_CT temp_IBD_B_alleles_flipped_other_allele_AG temp_IBD_B_alleles_flipped_other_allele_TG temp_IBD_B_alleles_flipped_other_allele_AC temp_IBD_B_alleles_flipped_other_allele_TC 2> /dev/null > ${dirI}/temp_${raw_data4}_B_allele_remap_file
 
   #and the flip list (do after)
-  cat temp_IBD_B_alleles_*flipped* | cut -d" " -f1 > ${dirI}/temp_${raw_data4}_B_allele_remap_flip
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data4}_2 --update-alleles ${dirI}/temp_${raw_data4}_B_allele_remap_file --make-bed --out ${dirI}/temp_${raw_data4} --silent
+ # cat temp_IBD_B_alleles_*flipped* | cut -d" " -f1 > ${dirI}/temp_${raw_data4}_B_allele_remap_flip
+ # plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data4}_2 --update-alleles ${dirI}/temp_${raw_data4}_B_allele_remap_file --make-bed --out ${dirI}/temp_${raw_data4} --silent
      #--update-alleles: 3419 variants updated. 
   #now get rid of the B alleles you can't align
-  echo ""
-  awk '$5=="B" || $6=="B" {print $2}' ${dirI}/temp_${raw_data4}.bim > ${dirI}/temp_${raw_data4}_exclude; wc -l ${dirI}/temp_${raw_data4}_exclude
+  #echo ""
+  #awk '$5=="B" || $6=="B" {print $2}' ${dirI}/temp_${raw_data4}.bim > ${dirI}/temp_${raw_data4}_exclude; wc -l ${dirI}/temp_${raw_data4}_exclude
     #2499
 
   #04/08/2016 there are a number of overlapping SNPs on the IBD set that are flipped relative to each other. Can't make this change for all sets as they are not necessarily fliiped in the WAMHS exm data
-    echo "exm-rs6456951" > ${dirI}/temp_${raw_data4}_B_allele_remap_flip #flipped in IBD relative to rs6456951 which is on the same array
-    echo "exm-rs9261434" >> ${dirI}/temp_${raw_data4}_B_allele_remap_flip #flipped in IBD relative to rs9261434 which is on the same array
-    echo "exm-rs3094116" >> ${dirI}/temp_${raw_data4}_B_allele_remap_flip #flipped in IBD relative to rs3094116 which is on the same array
-    echo "exm-rs12138950" >> ${dirI}/temp_${raw_data4}_B_allele_remap_flip #flipped in IBD relative to rs12138950 which is on the same array
-    echo "exm-rs349475" >> ${dirI}/temp_${raw_data4}_B_allele_remap_flip #flipped in IBD relative to rs349475 which is on the same array
-    echo "exm-rs1150739" >> ${dirI}/temp_${raw_data4}_B_allele_remap_flip #flipped in IBD relative to rs115748975 (alias of rs1150739) which is on the same array
-    echo "exm-rs3868082" >> ${dirI}/temp_${raw_data4}_B_allele_remap_flip #flipped in IBD relative to rs114900872 (alias of rs3868082)  which is on the same array
-    echo "exm-rs7819412" >> ${dirI}/temp_${raw_data4}_B_allele_remap_flip #flipped in IBD relative to rs7819412 which is on the same array
+   # echo "exm-rs6456951" > ${dirI}/temp_${raw_data4}_B_allele_remap_flip #flipped in IBD relative to rs6456951 which is on the same array
+    #echo "exm-rs9261434" >> ${dirI}/temp_${raw_data4}_B_allele_remap_flip #flipped in IBD relative to rs9261434 which is on the same array
+    #echo "exm-rs3094116" >> ${dirI}/temp_${raw_data4}_B_allele_remap_flip #flipped in IBD relative to rs3094116 which is on the same array
+    #echo "exm-rs12138950" >> ${dirI}/temp_${raw_data4}_B_allele_remap_flip #flipped in IBD relative to rs12138950 which is on the same array
+    #echo "exm-rs349475" >> ${dirI}/temp_${raw_data4}_B_allele_remap_flip #flipped in IBD relative to rs349475 which is on the same array
+    #echo "exm-rs1150739" >> ${dirI}/temp_${raw_data4}_B_allele_remap_flip #flipped in IBD relative to rs115748975 (alias of rs1150739) which is on the same array
+    #echo "exm-rs3868082" >> ${dirI}/temp_${raw_data4}_B_allele_remap_flip #flipped in IBD relative to rs114900872 (alias of rs3868082)  which is on the same array
+    #echo "exm-rs7819412" >> ${dirI}/temp_${raw_data4}_B_allele_remap_flip #flipped in IBD relative to rs7819412 which is on the same array
 
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data4} --flip ${dirI}/temp_${raw_data4}_B_allele_remap_flip --make-bed --out ${dirI}/temp_${raw_data4}_2 --exclude ${dirI}/temp_${raw_data4}_exclude --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data4} --flip ${dirI}/temp_${raw_data4}_B_allele_remap_flip --make-bed --out ${dirI}/temp_${raw_data4}_2 --exclude ${dirI}/temp_${raw_data4}_exclude --silent
 
   #write out for next step
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data4}_2  --make-bed --out ${dirI}/temp_2016_cleaning_IBD_controls --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data4}_2  --make-bed --out ${dirI}/temp_2016_cleaning_IBD_controls --silent
     #948342 variants and 929 people pass filters and QC.
-  echo -e "\nFinished extracting IBD data and fixing up A/B alleles"
+  #echo -e "\nFinished extracting IBD data and fixing up A/B alleles"
 
-  rm -f temp_IBD_B_alleles_ambigious_aligned_same_allele temp_IBD_B_alleles_ambigious_aligned_other_allele temp_IBD_B_alleles_ambigious_flipped_same_allele temp_IBD_B_alleles_ambigious_flipped_other_allele temp_IBD_B_alleles_aligned_same_allele temp_IBD_B_alleles_aligned_other_allele temp_IBD_B_alleles_flipped_same_allele_AG temp_IBD_B_alleles_flipped_same_allele_AC temp_IBD_B_alleles_flipped_same_allele_TG temp_IBD_B_alleles_flipped_same_allele_TC temp_IBD_B_alleles_flipped_same_allele_GA temp_IBD_B_alleles_flipped_same_allele_GT temp_IBD_B_alleles_flipped_same_allele_CA temp_IBD_B_alleles_flipped_same_allele_CT temp_IBD_B_alleles_flipped_other_allele_GA temp_IBD_B_alleles_flipped_other_allele_CA temp_IBD_B_alleles_flipped_other_allele_GT temp_IBD_B_alleles_flipped_other_allele_CT temp_IBD_B_alleles_flipped_other_allele_AG temp_IBD_B_alleles_flipped_other_allele_TG temp_IBD_B_alleles_flipped_other_allele_AC temp_IBD_B_alleles_flipped_other_allele_TC ${dirI}/temp_${raw_data4}*
+  #rm -f temp_IBD_B_alleles_ambigious_aligned_same_allele temp_IBD_B_alleles_ambigious_aligned_other_allele temp_IBD_B_alleles_ambigious_flipped_same_allele temp_IBD_B_alleles_ambigious_flipped_other_allele temp_IBD_B_alleles_aligned_same_allele temp_IBD_B_alleles_aligned_other_allele temp_IBD_B_alleles_flipped_same_allele_AG temp_IBD_B_alleles_flipped_same_allele_AC temp_IBD_B_alleles_flipped_same_allele_TG temp_IBD_B_alleles_flipped_same_allele_TC temp_IBD_B_alleles_flipped_same_allele_GA temp_IBD_B_alleles_flipped_same_allele_GT temp_IBD_B_alleles_flipped_same_allele_CA temp_IBD_B_alleles_flipped_same_allele_CT temp_IBD_B_alleles_flipped_other_allele_GA temp_IBD_B_alleles_flipped_other_allele_CA temp_IBD_B_alleles_flipped_other_allele_GT temp_IBD_B_alleles_flipped_other_allele_CT temp_IBD_B_alleles_flipped_other_allele_AG temp_IBD_B_alleles_flipped_other_allele_TG temp_IBD_B_alleles_flipped_other_allele_AC temp_IBD_B_alleles_flipped_other_allele_TC ${dirI}/temp_${raw_data4}*
 
-  echo -e "\n++++++Extracting initial Gluacoma data for WAMHS+++++\n"
+  #echo -e "\n++++++Extracting initial Gluacoma data for WAMHS+++++\n"
   #as with IBD I used some internal duplicates (in this case a MZ twinset) to flag discordant SNPs /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/CIDR_WAMHS/GLAUCOMA/script_to_clean_glaucoma_data.sh. Script shows nothing else unusual to deal with
-  wc -l /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/CIDR_WAMHS/GLAUCOMA/Glaucoma_SNPs_discordant_in_MZ_twin_samples.txt
+  #wc -l /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/CIDR_WAMHS/GLAUCOMA/Glaucoma_SNPs_discordant_in_MZ_twin_samples.txt
     #114
   #are hg18
-  for i in ${OAG1} ${OAG2}
-  do
-    echo -e "\nSetting ${i} samples as controls\n"
+  #for i in ${OAG1} ${OAG2}
+  #do
+   # echo -e "\nSetting ${i} samples as controls\n"
     #set them as controls (to make sure all are used for checks. Note that 35 or so of OAG1 and all of OAG2 are missing phenotypes; my notes from past cleaning don't expand on why this is...
-    awk '{print $1,$2,1}' ${dirOAG}/${i}.fam > ${dirI}/temp_${i}.pheno
-    plink_1.90 --threads 1 --bfile ${dirOAG}/${i} --check-sex --pheno ${dirI}/temp_${i}.pheno --out ${dirI}/temp_${i} --silent
+    #awk '{print $1,$2,1}' ${dirOAG}/${i}.fam > ${dirI}/temp_${i}.pheno
+    #plink_1.90 --threads 1 --bfile ${dirOAG}/${i} --check-sex --pheno ${dirI}/temp_${i}.pheno --out ${dirI}/temp_${i} --silent
       #OAG1: 964325 variants loaded. 651 people (0 males, 0 females, 651 ambiguous) 651 phenotypes present after --pheno. NO sex data, so 651 problems
       #OAG2: 733202 variants loaded. 647 people (0 males, 0 females, 647 ambiguous). 647 phenotype values present after --pheno.
-    echo -e "\nCheck sex results for ${i} : showing `grep -c "PROBLEM" ${dirI}/temp_${i}.sexcheck` PROBLEMS. Removing failed, correcting missing\n"
+    #echo -e "\nCheck sex results for ${i} : showing `grep -c "PROBLEM" ${dirI}/temp_${i}.sexcheck` PROBLEMS. Removing failed, correcting missing\n"
       #OAG1 651, OAG2 647
-    awk '$4==0 {print $1,$2}' ${dirI}/temp_${i}.sexcheck > ${dirI}/temp_${i}.sexcheck_remove; wc -l ${dirI}/temp_${i}.sexcheck_remove
+    #awk '$4==0 {print $1,$2}' ${dirI}/temp_${i}.sexcheck > ${dirI}/temp_${i}.sexcheck_remove; wc -l ${dirI}/temp_${i}.sexcheck_remove
       #OAG1 0, OAG2 2
-    echo ""
-    awk '$5=="PROBLEM" && $4!="0" {print $1,$2,$4}' ${dirI}/temp_${i}.sexcheck > ${dirI}/temp_${i}.sexcheck_update; wc -l ${dirI}/temp_${i}.sexcheck_update
+    #echo ""
+    #awk '$5=="PROBLEM" && $4!="0" {print $1,$2,$4}' ${dirI}/temp_${i}.sexcheck > ${dirI}/temp_${i}.sexcheck_update; wc -l ${dirI}/temp_${i}.sexcheck_update
       #OAG1 651, OAG2 645
-    echo ""
-    plink_1.90 --threads 1 --bfile  ${dirOAG}/${i} --pheno ${dirI}/temp_${i}.pheno --make-bed --out ${dirI}/temp_${i} --remove ${dirI}/temp_${i}.sexcheck_remove --update-sex ${dirI}/temp_${i}.sexcheck_update --silent
+    #echo ""
+    #plink_1.90 --threads 1 --bfile  ${dirOAG}/${i} --pheno ${dirI}/temp_${i}.pheno --make-bed --out ${dirI}/temp_${i} --remove ${dirI}/temp_${i}.sexcheck_remove --update-sex ${dirI}/temp_${i}.sexcheck_update --silent
      #OAG1: 964325 variants 651 people loaded, --update-sex: 651 people updated --remove: 651 people remaining. 964325 variants and 651 people pass filters and QC.
      #OAG2: 733202 variants 647 people loaded, --update-sex: 645 people updated. --remove: 645 people remaining. 733202 variants and 645 people pass filters and QC.
-    if `echo ${i} | grep -q "OAGphase1"`
-    then
-      echo -e "\nOAG1 phase detected, changing "RS"IDs to rsIDs\n"
-      head -3 ${dirI}/temp_${i}.bim
-      echo ""
-      awk '{print $2,$2}' ${dirI}/temp_${i}.bim | sed 's/ RS/ rs/g' > ${dirI}/temp_${i}_update; wc -l ${dirI}/temp_${i}_update
-      echo ""
-      plink_1.90 --threads 1 --bfile ${dirI}/temp_${i} --update-name ${dirI}/temp_${i}_update --make-bed --out ${dirI}/temp_${i} --silent
+    #if `echo ${i} | grep -q "OAGphase1"`
+    #then
+     # echo -e "\nOAG1 phase detected, changing "RS"IDs to rsIDs\n"
+      #head -3 ${dirI}/temp_${i}.bim
+      #echo ""
+      #awk '{print $2,$2}' ${dirI}/temp_${i}.bim | sed 's/ RS/ rs/g' > ${dirI}/temp_${i}_update; wc -l ${dirI}/temp_${i}_update
+      #echo ""
+      #plink_1.90 --threads 1 --bfile ${dirI}/temp_${i} --update-name ${dirI}/temp_${i}_update --make-bed --out ${dirI}/temp_${i} --silent
         #--update-name: 964325 values updated.
-      echo ""
-      head -3 ${dirI}/temp_${i}.bim
-     fi
-   echo ""
+      #echo ""
+      #head -3 ${dirI}/temp_${i}.bim
+     #fi
+   #echo ""
    #not sure when hh SNPs are generated relative to updating sex so regenerate them again to make sure (just run freq)
-   plink_1.90 --threads 1 --bfile ${dirI}/temp_${i} --freq --out ${dirI}/temp_${i} --silent
+   #plink_1.90 --threads 1 --bfile ${dirI}/temp_${i} --freq --out ${dirI}/temp_${i} --silent
        #OAG1: Warning: 53902 het. haploid genotypes present; OAG2 20965 het. haploid;
     #check if any fall in hg18 NON PAR regions 
-    echo ""
-    awk '{print $3}' ${dirI}/temp_${i}.hh | sort | uniq > ${dirI}/temp_${i}.hh_snps; wc -l ${dirI}/temp_${i}.hh_snps
+    #echo ""
+    #awk '{print $3}' ${dirI}/temp_${i}.hh | sort | uniq > ${dirI}/temp_${i}.hh_snps; wc -l ${dirI}/temp_${i}.hh_snps
       #OAG1: 2873; OAG2: 727
     #do any fall in the hg18 PAR boundaries (checked, both are hg18)
-    echo ""
-    awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_${i}.hh_snps ${dirI}/temp_${i}.bim | awk '($1==23 && ($4 >= 1 && $4 <= 2709520)) ||($1==23 && ($4 >= 154584238 && $4 <= 154913754)) || ($1==24 && ($4 >= 1 && $4 <= 2709520)) || ($1==24 && ($4 >= 57443438 && $4 <= 57772954))' | wc -l
+    #echo ""
+    #awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_${i}.hh_snps ${dirI}/temp_${i}.bim | awk '($1==23 && ($4 >= 1 && $4 <= 2709520)) ||($1==23 && ($4 >= 154584238 && $4 <= 154913754)) || ($1==24 && ($4 >= 1 && $4 <= 2709520)) || ($1==24 && ($4 >= 57443438 && $4 <= 57772954))' | wc -l
       #OAG1 1; 24 rs9286410 0 1308324 G	A. Can ignore as Y chr, just remove it. Actually OAG2 has a bunch, may as well do it properly. OAG2 36 
-    echo ""
-    awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_${i}.hh_snps ${dirI}/temp_${i}.bim | awk '($1==23 && ($4 >= 1 && $4 <= 2709520)) ||($1==23 && ($4 >= 154584238 && $4 <= 154913754)) || ($1==24 && ($4 >= 1 && $4 <= 2709520)) || ($1==24 && ($4 >= 57443438 && $4 <= 57772954)) {print $2,25}' > ${dirI}/temp_${i}_PAR_update; wc -l ${dirI}/temp_${i}_PAR_update
+    #echo ""
+    #awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_${i}.hh_snps ${dirI}/temp_${i}.bim | awk '($1==23 && ($4 >= 1 && $4 <= 2709520)) ||($1==23 && ($4 >= 154584238 && $4 <= 154913754)) || ($1==24 && ($4 >= 1 && $4 <= 2709520)) || ($1==24 && ($4 >= 57443438 && $4 <= 57772954)) {print $2,25}' > ${dirI}/temp_${i}_PAR_update; wc -l ${dirI}/temp_${i}_PAR_update
       #OAG1 1, OAG2 36
-    awk 'NR==FNR {a[$1];next} !($1 in a)' ${dirI}/temp_${i}_PAR_update ${dirI}/temp_${i}.hh_snps  > ${dirI}/temp_${i}.hh_snps_exclude; wc -l ${dirI}/temp_${i}.hh_snps_exclude
+    #awk 'NR==FNR {a[$1];next} !($1 in a)' ${dirI}/temp_${i}_PAR_update ${dirI}/temp_${i}.hh_snps  > ${dirI}/temp_${i}.hh_snps_exclude; wc -l ${dirI}/temp_${i}.hh_snps_exclude
       #OAG2 691, OAG1 2873
     #as above was still getting the 'non-missing Y errors'; in melanoma.bim found these to be single calls scattered across SNPs, not worth following up, so get rid of those with set-hh-missing; as now updateding chr this has to be done in the second step
-    plink_1.90 --threads 1 --bfile ${dirI}/temp_${i} --exclude ${dirI}/temp_${i}.hh_snps_exclude --make-bed --out  ${dirI}/temp_${i}_2 --update-chr ${dirI}/temp_${i}_PAR_update --silent
+    #plink_1.90 --threads 1 --bfile ${dirI}/temp_${i} --exclude ${dirI}/temp_${i}.hh_snps_exclude --make-bed --out  ${dirI}/temp_${i}_2 --update-chr ${dirI}/temp_${i}_PAR_update --silent
       #OAG1 --exclude: 961452 variants remaining. --update-chr: 1 value updated
       #OAG2 --exclude: 7332511 variants remaining --update-chr: 36 values updated 
-    plink_1.90 --threads 1 --bfile ${dirI}/temp_${i}_2 --set-hh-missing --make-bed --out ${dirI}/temp_2016_cleaning_${i}_controls --silent
+    #plink_1.90 --threads 1 --bfile ${dirI}/temp_${i}_2 --set-hh-missing --make-bed --out ${dirI}/temp_2016_cleaning_${i}_controls --silent
       #OAG1 961452 variants and 651 people pass filters and QC. Among remaining phenotypes, 0 are cases and 651 are controls.
       #OAG2 732511 variants and 645 people pass filters and QC. Among remaining phenotypes, 0 are cases and 645 are controls.
-    rm -f ${dirI}/temp_${i}*
-    echo -e "\nFinished extracting ${i}"
-  done #basic handling of the OAG data
+    #rm -f ${dirI}/temp_${i}*
+    #echo -e "\nFinished extracting ${i}"
+  #done #basic handling of the OAG data
 
   #WAMHS - /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/CIDR_WAMHS/working_directory/script_to_clean_WAMHS_GWAS_data.sh for how the initial CIDR cleaned files wer e converted from A/B format to ACGT. No reason to repeat that here
-  echo -e "\nExtracting the WAMHS GWAS data...\n"
+  #echo -e "\nExtracting the WAMHS GWAS data...\n"
 
-  plink_1.90 --threads 1 --bfile  ${dirJW}/${raw_data5} --check-sex --out ${dirI}/temp_${raw_data5} --silent
+  #plink_1.90 --threads 1 --bfile  ${dirJW}/${raw_data5} --check-sex --out ${dirI}/temp_${raw_data5} --silent
     #--check-sex: 16573 Xchr and 0 Ychr variant(s) scanned, 1 problem detected.
-  echo -e "\nCheck sex results for ${raw_data5} : showing `grep -c "PROBLEM" ${dirI}/temp_${raw_data5}.sexcheck` PROBLEMS. Removing failed, correcting missing\n"
+  #echo -e "\nCheck sex results for ${raw_data5} : showing `grep -c "PROBLEM" ${dirI}/temp_${raw_data5}.sexcheck` PROBLEMS. Removing failed, correcting missing\n"
     #1
-  awk '$4==0 {print $1,$2}' ${dirI}/temp_${raw_data5}.sexcheck > ${dirI}/temp_${raw_data5}.sexcheck_remove; wc -l ${dirI}/temp_${raw_data5}.sexcheck_remove
+  #awk '$4==0 {print $1,$2}' ${dirI}/temp_${raw_data5}.sexcheck > ${dirI}/temp_${raw_data5}.sexcheck_remove; wc -l ${dirI}/temp_${raw_data5}.sexcheck_remove
     #1
-  echo ""
-  awk '$5=="PROBLEM" && $4!="0" {print $1,$2,$4}' ${dirI}/temp_${raw_data5}.sexcheck > ${dirI}/temp_${raw_data5}.sexcheck_update; wc -l ${dirI}/temp_${raw_data5}.sexcheck_update
+  #echo ""
+  #awk '$5=="PROBLEM" && $4!="0" {print $1,$2,$4}' ${dirI}/temp_${raw_data5}.sexcheck > ${dirI}/temp_${raw_data5}.sexcheck_update; wc -l ${dirI}/temp_${raw_data5}.sexcheck_update
     #0
-  echo ""
-  plink_1.90 --threads 1 --bfile  ${dirJW}/${raw_data5} --make-bed --out ${dirI}/temp_${raw_data5} --remove ${dirI}/temp_${raw_data5}.sexcheck_remove --update-sex ${dirI}/temp_${raw_data5}.sexcheck_update --silent
+  #echo ""
+  #plink_1.90 --threads 1 --bfile  ${dirJW}/${raw_data5} --make-bed --out ${dirI}/temp_${raw_data5} --remove ${dirI}/temp_${raw_data5}.sexcheck_remove --update-sex ${dirI}/temp_${raw_data5}.sexcheck_update --silent
    #1274 phenotype values loaded from .fam. --update-sex: 0 people updated --remove: 1273 people remaining. 951117 variants and 1273 people pass filters and QC.
    #not sure when hh SNPs are generated relative to updating sex so regenerate them again to make sure (just run freq)
-   plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data5} --freq --out ${dirI}/temp_${raw_data5} --silent
+   #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data5} --freq --out ${dirI}/temp_${raw_data5} --silent
      #Warning: 380 het. haploid genotypes present
   #check if any fall in hg19 NON PAR regions
-  echo ""
-  awk '{print $3}' ${dirI}/temp_${raw_data5}.hh | sort | uniq > ${dirI}/temp_${raw_data5}.hh_snps; wc -l ${dirI}/temp_${raw_data5}.hh_snps
+  #echo ""
+  #awk '{print $3}' ${dirI}/temp_${raw_data5}.hh | sort | uniq > ${dirI}/temp_${raw_data5}.hh_snps; wc -l ${dirI}/temp_${raw_data5}.hh_snps
     #325
   #do any fall in the hg19 PAR boundaries
-  echo ""
-  awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_${raw_data5}.hh_snps ${dirJW}/${raw_data5}.bim | awk '($1==23 && ($4 >= 60001 && $4 <= 2699520)) ||($1==23 && ($4 >= 154931044 && $4 <= 155260560)) || ($1==24 && ($4 >= 10001 && $4 <= 2649520)) || ($1==24 && ($4 >= 59034050 && $4 <= 59363566))' | wc -l
-  echo ""
+  #echo ""
+  #awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_${raw_data5}.hh_snps ${dirJW}/${raw_data5}.bim | awk '($1==23 && ($4 >= 60001 && $4 <= 2699520)) ||($1==23 && ($4 >= 154931044 && $4 <= 155260560)) || ($1==24 && ($4 >= 10001 && $4 <= 2649520)) || ($1==24 && ($4 >= 59034050 && $4 <= 59363566))' | wc -l
+  #echo ""
     #0; so remove
   #as above was still getting the 'non-missing Y errors'; in melanoma.bim found these to be single calls scattered across SNPs, not worth following up, so get rid of those with set-hh-missing
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data5} --exclude ${dirI}/temp_${raw_data5}.hh_snps --make-bed --out  ${dirI}/temp_2016_cleaning_WAMHS_cases --set-hh-missing --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data5} --exclude ${dirI}/temp_${raw_data5}.hh_snps --make-bed --out  ${dirI}/temp_2016_cleaning_WAMHS_cases --set-hh-missing --silent
     #951117 variants loaded from .bim file --exclude: 950792 variants remaining 950792 variants and 1273 people pass filters and QC
 
-  echo -e "\nWAMHS extracted to case and control, with hh and sex errors fixed."
-  rm -f ${dirI}/temp_${raw_data5}*
+  #echo -e "\nWAMHS extracted to case and control, with hh and sex errors fixed."
+  #rm -f ${dirI}/temp_${raw_data5}*
 
-done #loop to turn on off
+#done #loop to turn on off
 
 ########################################################################
 #2.3 MIA
 ########################################################################
  #See /mnt/lustre/home/matthewL/Melanoma/MIA/SCRIPTS/script_to_clean_MIA_KK_data_simplified_fork.sh where I implimented a fix for general oncoarray problems based on OA consortium, and how i verified the UK control sets will be suitable. As of 08/09/2016 don't have the actual contorl genotypes in hand (extracted genotypes from existing control imputed data to test PCA matching but imputation done with --pgs-miss so missing genotypes filled in.
 
-for x in 1
-do
+#for x in 1
+#do
 
-  echo -e "\nExtracting MIA case data"
-  plink_1.90 --threads 1 --bfile ${dirMIA}/${raw_data6} --check-sex --out ${dirI}/temp_${raw_data6}_1 --silent
+  #echo -e "\nExtracting MIA case data"
+  #plink_1.90 --threads 1 --bfile ${dirMIA}/${raw_data6} --check-sex --out ${dirI}/temp_${raw_data6}_1 --silent
     #no problems detected
-  echo -e "\nCheck sex results for ${raw_data6} : showing `grep -c "PROBLEM" ${dirI}/temp_${raw_data6}_1.sexcheck` PROBLEMS. Removing failed, correcting missing\n"
+  #echo -e "\nCheck sex results for ${raw_data6} : showing `grep -c "PROBLEM" ${dirI}/temp_${raw_data6}_1.sexcheck` PROBLEMS. Removing failed, correcting missing\n"
     #0
   #not implimenting anything further here re fixing sex check
-  awk '{print $3}' ${dirI}/temp_${raw_data6}_1.hh | sort | uniq > ${dirI}/temp_${raw_data6}.hh_snps; wc -l ${dirI}/temp_${raw_data6}.hh_snps
+  #awk '{print $3}' ${dirI}/temp_${raw_data6}_1.hh | sort | uniq > ${dirI}/temp_${raw_data6}.hh_snps; wc -l ${dirI}/temp_${raw_data6}.hh_snps
     #1681
   #do any fall in the hg19 PAR boundaries
-  echo ""
-  awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_${raw_data6}.hh_snps ${dirMIA}/${raw_data6}.bim | awk '($1==23 && ($4 >= 60001 && $4 <= 2699520)) ||($1==23 && ($4 >= 154931044 && $4 <= 155260560)) || ($1==24 && ($4 >= 10001 && $4 <= 2649520)) || ($1==24 && ($4 >= 59034050 && $4 <= 59363566))' | wc -l
+  #echo ""
+  #awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_${raw_data6}.hh_snps ${dirMIA}/${raw_data6}.bim | awk '($1==23 && ($4 >= 60001 && $4 <= 2699520)) ||($1==23 && ($4 >= 154931044 && $4 <= 155260560)) || ($1==24 && ($4 >= 10001 && $4 <= 2649520)) || ($1==24 && ($4 >= 59034050 && $4 <= 59363566))' | wc -l
     #3, may as well remove
-  echo ""
+  #echo ""
 
   #First pass alignment against 1KG found a number of SNPs that were remapped incorrectly by the Oncoarray consurtium files. E.g. it remaps chr2_238556837_A_INDEL to rs189474818, even though they are different SNPs. Where possible I have identified the correct ID - in each case there is a SNP and indel at the same position.
-  echo "rs189474818 chr2:238556837:I" > ${dirI}/temp_oncoarray_correction #freq matches existing indel at that position
-  echo "rs145123507 chr3:170072132:I" >> ${dirI}/temp_oncoarray_correction #freq matches existing indel at that position
-  echo "rs184189083 chr8:76255548:I" >> ${dirI}/temp_oncoarray_correction #freq matches existing indel at that position
-  echo "rs182565982 chr8:76654003:I" >> ${dirI}/temp_oncoarray_correction #freq matches existing indel at that position
-  echo "rs3786878 chr19:38761733:I" >> ${dirI}/temp_oncoarray_correction #freq matches existing indel at that position
+  #echo "rs189474818 chr2:238556837:I" > ${dirI}/temp_oncoarray_correction #freq matches existing indel at that position
+  #echo "rs145123507 chr3:170072132:I" >> ${dirI}/temp_oncoarray_correction #freq matches existing indel at that position
+  #echo "rs184189083 chr8:76255548:I" >> ${dirI}/temp_oncoarray_correction #freq matches existing indel at that position
+  #echo "rs182565982 chr8:76654003:I" >> ${dirI}/temp_oncoarray_correction #freq matches existing indel at that position
+  #echo "rs3786878 chr19:38761733:I" >> ${dirI}/temp_oncoarray_correction #freq matches existing indel at that position
 
   #the following probably are just a misname but the freq is too different. E.g. 'rs183238081' is MAF 0.0007 in MIA, but expect 15% in EUR for matching chr7:23505149:I. 
-  echo "rs183238081" >> ${dirI}/temp_${raw_data6}.hh_snps #matching indel has diff freq
-  echo "rs12883217" >> ${dirI}/temp_${raw_data6}.hh_snps #Alleles don't make sense (A/T when should be T/G
-  echo "rs186261221" >> ${dirI}/temp_${raw_data6}.hh_snps #no overlapping indel in 1kg phase 1 v3, drop
-  echo "rs60682269" >> ${dirI}/temp_${raw_data6}.hh_snps #overlapping indel has diff freq (this is 1% in MIA, expect 47%)
+  #echo "rs183238081" >> ${dirI}/temp_${raw_data6}.hh_snps #matching indel has diff freq
+  #echo "rs12883217" >> ${dirI}/temp_${raw_data6}.hh_snps #Alleles don't make sense (A/T when should be T/G
+  #echo "rs186261221" >> ${dirI}/temp_${raw_data6}.hh_snps #no overlapping indel in 1kg phase 1 v3, drop
+  #echo "rs60682269" >> ${dirI}/temp_${raw_data6}.hh_snps #overlapping indel has diff freq (this is 1% in MIA, expect 47%)
 
-  plink_1.90 --threads 1 --bfile ${dirMIA}/${raw_data6} --exclude ${dirI}/temp_${raw_data6}.hh_snps --set-hh-missing --make-bed --out ${dirI}/temp_2016_cleaning_MIA_KK_cases --silent --update-name ${dirI}/temp_oncoarray_correction
+  #plink_1.90 --threads 1 --bfile ${dirMIA}/${raw_data6} --exclude ${dirI}/temp_${raw_data6}.hh_snps --set-hh-missing --make-bed --out ${dirI}/temp_2016_cleaning_MIA_KK_cases --silent --update-name ${dirI}/temp_oncoarray_correction
     #493234 variants loaded --exclude: 491549 variants remaining. --update-name: 5 values updated.  Total genotyping rate is 0.995059 491549 variants and 1968 people pass filters and QC.
 
-  rm -f ${dirI}/temp_${raw_data6}.hh_snps ${dirI}/temp_${raw_data6}_1.*  ${dirI}/temp_oncoarray_correction
-  echo -e "\nMIA data extracted"
+  #rm -f ${dirI}/temp_${raw_data6}.hh_snps ${dirI}/temp_${raw_data6}_1.*  ${dirI}/temp_oncoarray_correction
+  #echo -e "\nMIA data extracted"
 
-done 
+#done 
 
 ########################################################################
 #2.4 EPIGENE + QTWIN
@@ -1149,103 +1097,103 @@ done
 #this is based on /mnt/lustre/home/matthewL/Melanoma/WHITEMAN/EPIGENE/SCRIPTS/script_to_identify_epigene_control_release8.sh but skips what little cleaning/aligning I did there as doing it again here the same way for all sets
   #see /mnt/lustre/home/matthewL/Melanoma/WHITEMAN/EPIGENE/SCRIPTS/script_to_identify_epigene_control_release8.sh for how I identified cases and controls for the EPIGENE data from the most recent imputation batch
 
-for x in #1 
-do
-  echo -e "\nExtracting EPIGENE and QTWIN controls from release 8 data"
+#for x in #1 
+#do
+ # echo -e "\nExtracting EPIGENE and QTWIN controls from release 8 data"
   #work out a N of IDs
-  wc -l ${dirJEO}/GWAS_b37PlusStrand_chr10.fam
+  #wc -l ${dirJEO}/GWAS_b37PlusStrand_chr10.fam
     #12089
-  echo ""
-  wc -l ${dirJE}/EPIGENE_hg19_cleaned_no_maf_filter_IBD_PCA_outliers_removed.fam
+  #echo ""
+  #wc -l ${dirJE}/EPIGENE_hg19_cleaned_no_maf_filter_IBD_PCA_outliers_removed.fam
     #782
-  echo ""
-  grep -c DWM ${dirJEO}/GWAS_b37PlusStrand_chr10.fam
+  #echo ""
+  #grep -c DWM ${dirJEO}/GWAS_b37PlusStrand_chr10.fam
     #784
-  echo ""
-  awk 'NR==FNR {a[$1];next} $1 in a' <(cut -f4 ${EPIGENE_IDS} ) <(grep DWM ${dirJEO}/GWAS_b37PlusStrand_chr10.fam | cut -d" " -f2 | sed 's/^DW//g') | wc -l
+  #echo ""
+  #awk 'NR==FNR {a[$1];next} $1 in a' <(cut -f4 ${EPIGENE_IDS} ) <(grep DWM ${dirJEO}/GWAS_b37PlusStrand_chr10.fam | cut -d" " -f2 | sed 's/^DW//g') | wc -l
     #784; good start
-  echo ""
-  grep DWM ${dirJEO}/GWAS_b37PlusStrand_chr10.fam | cut -d" " -f1,2 > ${dirI}/temp_EPIGENE_controls_IDs; wc -l ${dirI}/temp_EPIGENE_controls_IDs
+  #echo ""
+  #grep DWM ${dirJEO}/GWAS_b37PlusStrand_chr10.fam | cut -d" " -f1,2 > ${dirI}/temp_EPIGENE_controls_IDs; wc -l ${dirI}/temp_EPIGENE_controls_IDs
     #784
-  echo ""
+  #echo ""
   #at the moment want parents of twins (as unrelated and only collected for P193 etc where we have ethics)
-  cut -d" " -f2 ${dirJEO}/GWAS_b37PlusStrand_chr10.fam | grep "^8" | grep "03$\|04$" | wc -l
+  #cut -d" " -f2 ${dirJEO}/GWAS_b37PlusStrand_chr10.fam | grep "^8" | grep "03$\|04$" | wc -l
     #2805
-  echo ""
+  #echo ""
   #see the epigene script for how I worked out which samples were twins, and which were suitable for inclusion. Here can just use ${EPIGENE_QTWIN_IDs}
-  cat ${EPIGENE_QTWIN_IDs} >> ${dirI}/temp_EPIGENE_controls_IDs; wc -l ${dirI}/temp_EPIGENE_controls_IDs
+  #cat ${EPIGENE_QTWIN_IDs} >> ${dirI}/temp_EPIGENE_controls_IDs; wc -l ${dirI}/temp_EPIGENE_controls_IDs
     #1767
 
   #first extract; can make a merge list at the same time
-  rm -f ${dirI}/temp_merge.list
+  #rm -f ${dirI}/temp_merge.list
 
-  echo ""
-  for i in {1..22} X
-  do
-    echo "Extracting chr${i} for EPIGENE/QTWIN"
-    plink_1.90 --threads 1 --bfile ${dirJEO}/GWAS_b37PlusStrand_chr${i} --keep ${dirI}/temp_EPIGENE_controls_IDs --make-bed --out ${dirI}/temp_GWAS_b37PlusStrand_chr${i}_EPIGENE_controls_IDs --silent
-    echo ${dirI}/temp_GWAS_b37PlusStrand_chr${i}_EPIGENE_controls_IDs >> ${dirI}/temp_merge.list
-  done #extract IDs by chromosome
+  #echo ""
+  #for i in {1..22} X
+  #do
+    #echo "Extracting chr${i} for EPIGENE/QTWIN"
+    #plink_1.90 --threads 1 --bfile ${dirJEO}/GWAS_b37PlusStrand_chr${i} --keep ${dirI}/temp_EPIGENE_controls_IDs --make-bed --out ${dirI}/temp_GWAS_b37PlusStrand_chr${i}_EPIGENE_controls_IDs --silent
+    #echo ${dirI}/temp_GWAS_b37PlusStrand_chr${i}_EPIGENE_controls_IDs >> ${dirI}/temp_merge.list
+  #done #extract IDs by chromosome
    #example for chr22 - Look like all SNPs, not just the ones I cleaned down to
      #12089 people (4004 males, 8085 females) loaded from .fam. --keep: 1767 people remaining.#Using 1 thread (no multithreaded calculations invoked).  #Before main variant filters, 2103 founders and 30 nonfounders present.#Calculating allele frequencies... done. #Total genotyping rate in remaining samples is 0.867375. #10152 variants and 1767 people pass filters and QC.
 
   #then merge into a single GWAS file, not by chr
-  echo ""
-  plink_1.90 --threads 1 --merge-list ${dirI}/temp_merge.list --make-bed --out ${dirI}/temp_${raw_data7}
-  echo ""
-  awk '{print $1}' ${dirI}/temp_${raw_data7}.bim | sort | uniq -c
+  #echo ""
+  #plink_1.90 --threads 1 --merge-list ${dirI}/temp_merge.list --make-bed --out ${dirI}/temp_${raw_data7}
+  #echo ""
+  #awk '{print $1}' ${dirI}/temp_${raw_data7}.bim | sort | uniq -c
     #all chr in there
-  echo ""
+  #echo ""
   #rm the temp files
-  rm -f ${dirI}/temp_GWAS_b37PlusStrand_chr*_EPIGENE_controls_IDs.* ${dirI}/temp_merge.list ${dirI}/temp_EPIGENE_controls_IDs
+  #rm -f ${dirI}/temp_GWAS_b37PlusStrand_chr*_EPIGENE_controls_IDs.* ${dirI}/temp_merge.list ${dirI}/temp_EPIGENE_controls_IDs
 
   ########################################################################
   #2.4.1 Fix the IDs, and set the phenotype
   ########################################################################
   #as per http://stackoverflow.com/questions/27252827/awk-replace-in-multiple-columns-specific-character-with-one-command Print an ID update file - without the DW field
-  awk '{print $1,$2,$1,$2}' ${dirI}/temp_${raw_data7}.fam | awk ' BEGIN {a[3];a[4]} {for(x in a)gsub(/DW/,"",$x)}7' > ${dirI}/temp_${raw_data7}_ID_update; wc -l ${dirI}/temp_${raw_data7}_ID_update
+  #awk '{print $1,$2,$1,$2}' ${dirI}/temp_${raw_data7}.fam | awk ' BEGIN {a[3];a[4]} {for(x in a)gsub(/DW/,"",$x)}7' > ${dirI}/temp_${raw_data7}_ID_update; wc -l ${dirI}/temp_${raw_data7}_ID_update
     #1767
-  echo ""
-  tail ${dirI}/temp_${raw_data7}_ID_update
-  echo ""
-  awk '{
-  if($2 ~ /DWM/)
-    print $3,$4,"2";
-  if($2 ~ /^8/)
-    print $3,$4,"1";
-  }' ${dirI}/temp_${raw_data7}_ID_update > ${dirI}/temp_${raw_data7}_pheno;wc -l ${dirI}/temp_${raw_data7}_pheno
+  #echo ""
+  #tail ${dirI}/temp_${raw_data7}_ID_update
+  #echo ""
+  #awk '{
+  #if($2 ~ /DWM/)
+   # print $3,$4,"2";
+  #if($2 ~ /^8/)
+   # print $3,$4,"1";
+  #}' ${dirI}/temp_${raw_data7}_ID_update > ${dirI}/temp_${raw_data7}_pheno;wc -l ${dirI}/temp_${raw_data7}_pheno
     #1767
-  echo ""
-  tail ${dirI}/temp_${raw_data7}_pheno
+  #echo ""
+  #tail ${dirI}/temp_${raw_data7}_pheno
     #looks good
   #fix IDs
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data7} --update-ids ${dirI}/temp_${raw_data7}_ID_update --make-bed --out ${dirI}/temp_${raw_data7}_v2 --allow-no-sex --silent
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data7}_v2 --pheno ${dirI}/temp_${raw_data7}_pheno --make-bed --out ${dirI}/temp_${raw_data7}_v3 --allow-no-sex --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data7} --update-ids ${dirI}/temp_${raw_data7}_ID_update --make-bed --out ${dirI}/temp_${raw_data7}_v2 --allow-no-sex --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data7}_v2 --pheno ${dirI}/temp_${raw_data7}_pheno --make-bed --out ${dirI}/temp_${raw_data7}_v3 --allow-no-sex --silent
   #Among remaining phenotypes, 784 are cases and 983 are controls.
 
   ########################################################################
   #2.4.2 Check for sex problems, hh SNPs, write out as case/controls
   ########################################################################
-  plink_1.90 --threads 1 --bfile  ${dirI}/temp_${raw_data7}_v3 --check-sex --out ${dirI}/temp_${raw_data7}_v3 --silent
+  #plink_1.90 --threads 1 --bfile  ${dirI}/temp_${raw_data7}_v3 --check-sex --out ${dirI}/temp_${raw_data7}_v3 --silent
     #--check-sex: 10039 Xchr and 0 Ychr variant(s) scanned, 2 problem detected.
-  echo -e "\nCheck sex results for ${raw_data7} : showing `grep -c "PROBLEM" ${dirI}/temp_${raw_data7}_v3.sexcheck` PROBLEMS. Removing failed, correcting missing\n"
+  #echo -e "\nCheck sex results for ${raw_data7} : showing `grep -c "PROBLEM" ${dirI}/temp_${raw_data7}_v3.sexcheck` PROBLEMS. Removing failed, correcting missing\n"
     #2
-  awk '$4==0 {print $1,$2}' ${dirI}/temp_${raw_data7}_v3.sexcheck > ${dirI}/temp_${raw_data7}_v3.sexcheck_remove; wc -l ${dirI}/temp_${raw_data7}_v3.sexcheck_remove
+  #awk '$4==0 {print $1,$2}' ${dirI}/temp_${raw_data7}_v3.sexcheck > ${dirI}/temp_${raw_data7}_v3.sexcheck_remove; wc -l ${dirI}/temp_${raw_data7}_v3.sexcheck_remove
     #2
-  echo ""
-  awk '$5=="PROBLEM" && $4!="0" {print $1,$2,$4}' ${dirI}/temp_${raw_data7}_v3.sexcheck > ${dirI}/temp_${raw_data7}_v3.sexcheck_update; wc -l ${dirI}/temp_${raw_data7}_v3.sexcheck_update
+  #echo ""
+  #awk '$5=="PROBLEM" && $4!="0" {print $1,$2,$4}' ${dirI}/temp_${raw_data7}_v3.sexcheck > ${dirI}/temp_${raw_data7}_v3.sexcheck_update; wc -l ${dirI}/temp_${raw_data7}_v3.sexcheck_update
     #0
-  plink_1.90 --threads 1 --bfile  ${dirI}/temp_${raw_data7}_v3 --make-bed --out ${dirI}/temp_${raw_data7}_v2 --remove ${dirI}/temp_${raw_data7}_v3.sexcheck_remove --update-sex ${dirI}/temp_${raw_data7}_v3.sexcheck_update --silent
+  #plink_1.90 --threads 1 --bfile  ${dirI}/temp_${raw_data7}_v3 --make-bed --out ${dirI}/temp_${raw_data7}_v2 --remove ${dirI}/temp_${raw_data7}_v3.sexcheck_remove --update-sex ${dirI}/temp_${raw_data7}_v3.sexcheck_update --silent
    #1767 phenotype values loaded from .fam. --update-sex: 0 people updated --remove: 1765 people remaining. 577849 variants and 1765 people pass filters and QC.
  
   #Note getting any hh or het Y chromosome errors so write out as it is - 
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data7}_v2 --filter-cases --make-bed --out ${dirI}/temp_2016_cleaning_EPIGENE_cases --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data7}_v2 --filter-cases --make-bed --out ${dirI}/temp_2016_cleaning_EPIGENE_cases --silent
     #577849 variants and 784 people pass filters and QC.
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data7}_v2 --filter-controls --make-bed --out ${dirI}/temp_2016_cleaning_QTWIN_controls --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_${raw_data7}_v2 --filter-controls --make-bed --out ${dirI}/temp_2016_cleaning_QTWIN_controls --silent
     #577849 variants and 981 people pass filters and QC.
-  rm -f ${dirI}/temp_${raw_data7}* ${dirI}/temp_controls_IDs ${dirI}/EPIGENE_QTWIN_IDs.txt
-  echo -e "\nEPIGENE + QTWIN extracted to case and control, with sex errors fixed (no hh errors)."
-done #loop to turn on/off EPIGENE/QTWIN data
+  #rm -f ${dirI}/temp_${raw_data7}* ${dirI}/temp_controls_IDs ${dirI}/EPIGENE_QTWIN_IDs.txt
+  #echo -e "\nEPIGENE + QTWIN extracted to case and control, with sex errors fixed (no hh errors)."
+#done #loop to turn on/off EPIGENE/QTWIN data
 
 
 ########################################################################
@@ -1262,13 +1210,13 @@ echo -e "\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 echo "Aligning sets with 1KG, including ambigious SNPs where MAF  < ${MAF}"
 echo -e "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 
-for i in ${dirI}/temp_2016_cleaning_MIA_KK_cases  #${dirI}/temp_2016_cleaning_QTWIN_controls ${dirI}/temp_2016_cleaning_EPIGENE_cases ${dirI}/temp_2016_cleaning_IBD_controls ${dirI}/temp_2016_cleaning_WAMHS_cases ${dirI}/temp_2016_cleaning_OAGphase2_controls ${dirI}/temp_2016_cleaning_HEIDELBERG_cases ${dirI}/temp_2016_cleaning_HEIDELBERG_controls ${dirI}/temp_2016_cleaning_SDH_2 ${dirI}/temp_2016_cleaning_QMEGA_610k_cases ${dirI}/temp_2016_cleaning_QMEGA_610k_controls ${dirI}/temp_2016_cleaning_QMEGA_omni_cases ${dirI}/temp_2016_cleaning_AMFS_cases ${dirI}/temp_2016_cleaning_AMFS_controls ${dirI}/temp_2016_cleaning_OAGphase1_controls
+for i in ${dirI}/temp_${raw_data} ${dirI}/temp_${raw_data2} ${dirI}/temp_${raw_data3} #${dirI}/temp_2016_cleaning_MIA_KK_cases ${dirI}/temp_2016_cleaning_QTWIN_controls ${dirI}/temp_2016_cleaning_EPIGENE_cases ${dirI}/temp_2016_cleaning_IBD_controls ${dirI}/temp_2016_cleaning_WAMHS_cases ${dirI}/temp_2016_cleaning_OAGphase2_controls ${dirI}/temp_2016_cleaning_HEIDELBERG_cases ${dirI}/temp_2016_cleaning_HEIDELBERG_controls ${dirI}/temp_2016_cleaning_SDH_2 ${dirI}/temp_2016_cleaning_QMEGA_610k_cases ${dirI}/temp_2016_cleaning_QMEGA_610k_controls ${dirI}/temp_2016_cleaning_QMEGA_omni_cases ${dirI}/temp_2016_cleaning_AMFS_cases ${dirI}/temp_2016_cleaning_AMFS_controls ${dirI}/temp_2016_cleaning_OAGphase1_controls
 do
 
   out_name=`basename ${i}`
 
-  #SDH is already hg19, as are IBD and WAMHS datasets
-  if `echo ${out_name} | grep -q "SDH\|IBD\|WAMHS\|QTWIN\|EPIGENE\|MIA"`
+  #all the three datasets are already hg19
+  if `echo ${out_name} | grep -q "Non-advanced\|Progressa\|CoreExome"`
   then
     echo -e "\nHg19 data detected, skipping lift over"
     #write out a version to make it work with the rest of the script
@@ -1284,19 +1232,19 @@ do
     # as per wiki liftOver input.bed hg18ToHg19.over.chain.gz output.bed unlifted.bed
     liftOver ${dirI}/temp_${out_name}_BED ${dirL}/hg18ToHg19.over.chain.gz ${dirI}/temp_${out_name}_BED_output ${dirI}/temp_${out_name}_BED_unlifted
     wc -l ${i}.bim
-      #1034058 melanoma, 610k
+     
     echo ""
     wc -l ${dirI}/temp_${out_name}_BED
-      #1034058 melanoma, 610k
+      
     echo ""
     wc -l ${dirI}/temp_${out_name}_BED_output
-      #1034058 melanoma, 610k
+      
     echo ""
     wc -l ${dirI}/temp_${out_name}_BED_unlifted
-      #2154; 2 per line so 1077 SNPs dropped, sounds about right, 610k
+      
     echo ""
     grep -c Deleted ${dirI}/temp_${out_name}_BED_unlifted
-      #1077 melanoma, 610k
+      
     echo ""
     #make a removal list; keep a copy
     grep -v Deleted ${dirI}/temp_${out_name}_BED_unlifted | cut -f4 > ${dirK}/${out_name}_hg18_snps_not_lifted_exlude.txt; wc -l ${dirK}/${out_name}_hg18_snps_not_lifted_exlude.txt
@@ -1307,7 +1255,6 @@ do
     #first drop SNPs and update bp postions. 07/07/2016 these are all straighforward; add --silent
     echo ""
     plink_1.90 --threads 1 --bfile ${i} --exclude ${dirK}/${out_name}_hg18_snps_not_lifted_exlude.txt  --make-bed --out ${dirI}/temp_${out_name}_cleaning_1 --silent
-      #--exclude: 1041929 variants remaining, melanoma, 610k etc
     plink_1.90 --threads 1 --bfile ${dirI}/temp_${out_name}_cleaning_1 --update-map  ${dirI}/temp_${out_name}_update_map_bp.txt --make-bed --out ${dirI}/temp_${out_name}_cleaning_2 --silent
       #--update-map: 1041929 values updated.
     #remember you can only update one part of the map file at a time and need to add a flag to specify chr
@@ -1349,8 +1296,10 @@ do
     #MIA 491549 variants loaded --update-map: 28 values updated --exclude: 491548 variants remaining --update-chr: 3 values updated
   plink_1.90 --threads 1 --bfile ${dirI}/temp_${out_name}_cleaning_4_temp --make-bed --out ${dirI}/temp_${out_name}_cleaning_4 --silent
   plink_1.90 --threads 1 --bfile ${dirI}/temp_${out_name}_cleaning_4 --freq --out ${dirI}/temp_${out_name}_cleaning_4 --silent
+
+  dirI2=/working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/working_directory
   echo ""
-  awk 'NR==FNR {a[$2]=$1" "$3" "$4" "$5" "$9" "$13;next} $2 in a {print $0,a[$2]}' <(gunzip -dc ${dirI}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) <( awk 'NR==FNR {a[$2]=$4;next} $2 in a {print $0,a[$2]}' <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_4.bim | sed 's/^ //g')  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_4.frq | sed 's/^ //g' | sed 's/ $//g') ) > ${dirI}/temp_${out_name}_cleaning_4_1KG_merge_rsIDs; wc -l ${dirI}/temp_${out_name}_cleaning_4_1KG_merge_rsIDs
+  awk 'NR==FNR {a[$2]=$1" "$3" "$4" "$5" "$9" "$13;next} $2 in a {print $0,a[$2]}' <(gunzip -dc ${dirI2}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) <( awk 'NR==FNR {a[$2]=$4;next} $2 in a {print $0,a[$2]}' <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_4.bim | sed 's/^ //g')  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_4.frq | sed 's/^ //g' | sed 's/ $//g') ) > ${dirI}/temp_${out_name}_cleaning_4_1KG_merge_rsIDs; wc -l ${dirI}/temp_${out_name}_cleaning_4_1KG_merge_rsIDs
   #SDH 883401 610k_cas 543678, 610k_con 528926, Omni_cases, AMFS_cas and AMFS_con 765318 WAMHS 679031 IBD 679175 Hei_cas 217000 HEI_con 219244 OAG1 895037 OAG2 714247 IBD 679173 253699 EPIGENE 245796 MIA 435523
 
   echo "" 
