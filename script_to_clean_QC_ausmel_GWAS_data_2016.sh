@@ -1216,7 +1216,7 @@ do
   out_name=`basename ${i}`
 
   #all the three datasets are already hg19
-  if `echo ${out_name} | grep -q "Non-advanced\|Progressa\|CoreExome"`
+  if `echo ${out_name} | grep -q "Non-advanced\|Progressa\|CoreExome"` 
   then
     echo -e "\nHg19 data detected, skipping lift over"
     #write out a version to make it work with the rest of the script
@@ -1297,10 +1297,10 @@ do
   plink_1.90 --threads 1 --bfile ${dirI}/temp_${out_name}_cleaning_4_temp --make-bed --out ${dirI}/temp_${out_name}_cleaning_4 --silent
   plink_1.90 --threads 1 --bfile ${dirI}/temp_${out_name}_cleaning_4 --freq --out ${dirI}/temp_${out_name}_cleaning_4 --silent
 
-  dirI2=/working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/working_directory
+  dirI2=/working/lab_stuartma/scratch/matthewL/ALL_1000G_phase1integrated_v3_impute
+
   echo ""
   awk 'NR==FNR {a[$2]=$1" "$3" "$4" "$5" "$9" "$13;next} $2 in a {print $0,a[$2]}' <(gunzip -dc ${dirI2}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) <( awk 'NR==FNR {a[$2]=$4;next} $2 in a {print $0,a[$2]}' <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_4.bim | sed 's/^ //g')  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_4.frq | sed 's/^ //g' | sed 's/ $//g') ) > ${dirI}/temp_${out_name}_cleaning_4_1KG_merge_rsIDs; wc -l ${dirI}/temp_${out_name}_cleaning_4_1KG_merge_rsIDs
-  #SDH 883401 610k_cas 543678, 610k_con 528926, Omni_cases, AMFS_cas and AMFS_con 765318 WAMHS 679031 IBD 679175 Hei_cas 217000 HEI_con 219244 OAG1 895037 OAG2 714247 IBD 679173 253699 EPIGENE 245796 MIA 435523
 
   echo "" 
   head -4 ${dirI}/temp_${out_name}_cleaning_4_1KG_merge_rsIDs
@@ -1308,7 +1308,7 @@ do
   cd $dirI
   echo -e "\n+++++++++++Using awk_check_based_on_ID_1KG function to check SNPs paired with 1KG by ID have correct position, and strand. Aligning amibigious SNPs where MAF < $MAF and MAF difference with 1KG is < $DIFF"
   #see 0.4 for the function used here but this will assign the SNPs to various categories - e.g. aligned_concordant - same ID, same position, same strand and so on
-  awk -v MAF=${MAF} -v DIFF=${DIFF} -f /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/SCRIPTS/awk_check_based_on_ID_1KG ${dirI}/temp_${out_name}_cleaning_4_1KG_merge_rsIDs
+  awk -v MAF=${MAF} -v DIFF=${DIFF} -f ${dirI}/awk_check_based_on_ID_1KG ${dirI}/temp_${out_name}_cleaning_4_1KG_merge_rsIDs
   #any duplicates? Suggests I messed up in the function as it is assigning the same SNP to more than one category. Not every iteration generates every file and that is okay, so supress the cat warning about missing files by 2> /dev/null. Tested it by adding a duplicate SNP to one of the files, still works fine. 
   var_dup_1=`cat temp_flipped_concordant temp_flipped_chr_disc_bp_conc temp_aligned_concordant temp_aligned_chr_disc_bp_disc temp_aligned_chr_disc_bp_conc temp_aligned_chr_conc_bp_disc temp_flipped_chr_con_bp_disc temp_ambigious_aligned_concordant_same_allele temp_ambigious_aligned_chr_disc_bp_conc_same_allele temp_ambigious_aligned_chr_conc_bp_disc_same_allele temp_ambigious_aligned_chr_disc_bp_disc_same_allele temp_ambigious_aligned_concordant_other_allele temp_ambigious_aligned_chr_disc_bp_conc_other_allele temp_ambigious_aligned_chr_conc_bp_disc_other_allele temp_ambigious_aligned_chr_disc_bp_disc_other_allele temp_ambigious_flipped_concordant_same_allele temp_ambigious_flipped_chr_disc_bp_conc_same_allele temp_ambigious_flipped_chr_conc_bp_disc_same_allele temp_ambigious_flipped_chr_disc_bp_disc_same_allele temp_ambigious_flipped_concordant_other_allele temp_ambigious_flipped_chr_disc_bp_conc_other_allele temp_ambigious_flipped_chr_conc_bp_disc_other_allele temp_ambigious_flipped_chr_disc_bp_disc_other_allele temp_ambigious_MAF_to_high_too_assess temp_non_biallelic_snps temp_indels_aligned_same_allele temp_indels_aligned_other_allele temp_flipped_chr_disc_bp_disc 2> /dev/null  | sort | uniq -d | wc -l`
 
@@ -1515,14 +1515,7 @@ do
     #so pair triplicate sites with freq, then sort by position (chr then bp), then by chromosome count. If you then get awk to drop every first line will be keeping the 2 most informative SNPs. (e.g. drop 1, 4, 7 etc) 
   awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <( awk 'NR==FNR {a[$1,$2];next} ($1,$4) in a {print $0}' <(awk '{print $1,$4}' ${dirI}/temp_${out_name}_cleaning_5.bim | sort | uniq -c | awk '$1==3 {print $2,$3}') <( sed 's/\t/ /g' ${dirI}/temp_${out_name}_cleaning_5.bim | sed 's/ \+/ /g') ) <( sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_5.frq | sed 's/^ //g') | sort -k1,1 -k4,4 -k12,12 | head -6
   echo ""
-   #IBD 
-      #1 exm2250216 0 169513583 T G 1 exm2250216 T G 0.0819 1856
-      #1 exm121943 0 169513583 T G 1 exm121943 T G 0.08181 1858
-      #1 rs6037 0 169513583 T G 1 rs6037 T G 0.08181 1858
-      #1 rs17650204 0 171755071 G A 1 rs17650204 G A 0.09537 1856
-      #1 exm123761 0 171755071 G A 1 exm123761 G A 0.09526 1858
-      #1 exm2250237 0 171755071 G A 1 exm2250237 G A 0.09526 1858
-  #print the first (least informative SNP) for exclusion
+  
   awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <( awk 'NR==FNR {a[$1,$2];next} ($1,$4) in a {print $0}' <(awk '{print $1,$4}' ${dirI}/temp_${out_name}_cleaning_5.bim | sort | uniq -c | awk '$1==3 {print $2,$3}') <( sed 's/\t/ /g' ${dirI}/temp_${out_name}_cleaning_5.bim | sed 's/ \+/ /g') ) <( sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_5.frq | sed 's/^ //g') | sort -k1,1 -k4,4 -k12,12 | sed -n 1~3p | cut -d" " -f2 >> ${dirI}/temp_${out_name}_cleaning_overlapping_diff_alleles  ; wc -l ${dirI}/temp_${out_name}_cleaning_overlapping_diff_alleles
     #IBD 1350 - 1301 + 49 trip SNPs. WAMHS 849. OAG2 7838 OAG1 22026 HEI_Cas 241 HEI_con 284 SDH 46508 610k_case, 610k_con, Omni_case, AMFS_case, AMFS_con 0 (no more) QTWIN 117797 ~ 24 more or so EPIGENE 93160, 17 more MIA 0
   echo ""
@@ -1565,11 +1558,6 @@ do
    #IBD 18141, WAMHS 18232 OAG2 2 OAG1 0 HEI_cas 0 HEI_con 0 SDH 24 610k_case 2 610k_con 2 OMNI_case 24 AMFS_case 24 AMFS_con 24 QTWIN 7029 MIA 0
   echo ""
   head -4 ${dirI}/temp_${out_name}_cleaning_6_overlap_3
-    #WAMHS - first and third looks to the same SNP but fipped, the second the fourth the same SNP and strand. IBD looks sim but obv diff freq etc
-    #10 100017453 10 rs1983864 0 100017453 G T 10 exm847519 0 100017453 C A G T 0.3425 2546 C A 0.3425 2546
-    #10 100017553 10 rs11189525 0 100017553 A C 10 exm847525 0 100017553 A C A C 0 2546 A C 0 2546
-    #10 100144782 10 rs2296441 0 100144782 T C 10 exm847614 0 100144782 A G T C 0.2887 2546 A G 0.2887 2546
-    #10 100148176 10 rs2147896 0 100148176 G A 10 exm847632 0 100148176 G A G A 0.34 2544 G A 0.34 2544
 
   #need to identify the flips, and flip them, so my existing function can then manage comparing them... actually that is silly, don't need to flip them, just work out if they are the same SNP (strand regardless) and drop the extranous one. First drop NA or 0 freq SNPs, then check for same SNP same strand, then same SNP other strang. Could do each in a single command but this way is cleaner to understand/write. Did a quick test where I wrote out both SNPs at each check ($4,$10) and looked for duplicates (as in the same pair was tripping more than one check) and it only happened where both SNPs were monomorphic. Write out the one with the the smallest N of chromosomes. 
   #For WAMHS these setting left 34 SNPs that couldn't be handled. Some were just a bit more than 0.01 diff but 0.02 diff still 22 so not worth changing. The remaining were SNPs near 0.5 MAF and thus flipped, or properly different SNPs. IBD gets 69; allowing 2% diff leaves 38. So set to 2%, but not worth messing about with any more so just drop these ones that don't match. 
@@ -1629,21 +1617,6 @@ do
   echo -e "\nRemoving the `sed -n '$=' temp_overlapping_exclude` overlapping and redundant SNPs\n" 
      #IBD 19354 WAMHS 19587 OAG2 2 OAG1 0 HEI_cas 0 HEI_con 0 610k_case 2 omni_case 24 AMFS_case 24 QTWIN 7850  EPIGENE 6602 MIA 0
   plink_1.90 --threads 1 --bfile ${dirI}/temp_${out_name}_cleaning_6 --exclude temp_overlapping_exclude --make-bed --out  ${dirI}/temp_${out_name}_cleaning_7
-     #IBD 933559 variants loaded --exclude: 914205 variants remaining.
-     #WAMHS 936505 variants loaded --exclude: 916918 variants remaining
-     #OAG2 707537 variants loaded --exclude: 707535 variants remaining.
-     #OAG1 856283 variants loaded --exclude: 856283 variants remaining.
-     #HEI_cas 218704 variants loaded from .bim file --exclude: 218704 variants remaining.
-     #HEI_con 221018 variants loaded from .bim file. --exclude: 221018 variants remaining
-     #SDH 940334 variants loaded from .bim file --exclude: 940310 variants remaining.
-     #610k_case 548565 variants loaded  --exclude: 548563 variants remaining.
-     #610k_control 533169 variants loaded --exclude: 533167 variants remaining.
-     #omni_cases 803876 variants loaded --exclude: 803852 variants remaining.
-     #AMFS_cases 803868 variants loaded from .bim file. --exclude: 803844 variants remaining.
-     #AMFS_con 803845 variants loaded --exclude: 803821 variants remaining 
-     #QTWIN 459153 variants loaded --exclude: 451303 variants remaining.
-     #EPIGENE 406754 variants loaded  --exclude: 400152 variants remaining.
-     #MIA 488143 variants loaded --exclude: 488143 variants remaining.
 
   #clean up
   rm -f ${dirI}/temp_overlapping_NA_exclude_1 ${dirI}/temp_overlapping_NA_exclude_2 ${dirI}/temp_overlapping_same_SNP_1 ${dirI}/temp_overlapping_same_SNP_2 ${dirI}/temp_overlapping_same_SNP_flipped_1 ${dirI}/temp_overlapping_same_SNP_flipped_2 ${dirI}/temp_overlapping_same_SNP_MAF_50_swapped_A1_1 ${dirI}/temp_overlapping_same_SNP_MAF_50_swapped_A1_2 ${dirI}/temp_unpairable_1 ${dirI}/temp_unpairable_2 ${dirI}/temp_overlapping_exclude
@@ -1670,7 +1643,7 @@ do
   #13/07/2016 this is the older version of this command for posterity. It works EXCEPT where there is a INDEL overlapping the SNP, and is listed first in the 1000 genomes panel before the matching SNP. As each SNP is in PLINK once, only the first match in 1kg is shown, so only the SNP vs INDEL is paired. Reversing this would print both pairings, allowing the SNP to be recovered.
   ##awk 'NR==FNR {a[$1,$3]=$1" "$3" "$4" "$5" "$9" "$13" "$2;next} ($1,$7) in a {print $0,a[$1,$7]}' <(gunzip -dc ${dirI}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) <( awk 'NR==FNR {a[$2]=$4;next} $2 in a {print $0,a[$2]}' <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_7.bim | sed 's/^ //g')  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_7.frq | sed 's/^ //g' | sed 's/ $//g') ) > ${dirI}/temp_${out_name}_cleaning_7_1KG_merge_pos; wc -l ${dirI}/temp_${out_name}_cleaning_7_1KG_merge_pos
   ##25/07/2017 Found the reverse - with exm chip data there are multiple overlapping rare variants (e.g. exm1771279 and exm2277033) that 'block' correct matching. exm2277033 looks to be either super rare or a nonsense SNP, whereas exm1771279 is a real 1kg SNP, but exm2277033 is in the bim file first and thus used in the matching with 1KG. But actually his is okay. Such matches are picked up as temp_non_biallelic_snps_ID, and removed, and detected again later in a final test for overlapping SNPs; I just need to add another renaming step there to finally fix these
-  awk 'NR==FNR  {a[$1,$7]=$0;next} ($1,$3) in a {print a[$1,$3],$1,$3,$4,$5,$9,$13,$2}' <( awk 'NR==FNR {a[$2]=$4;next} $2 in a {print $0,a[$2]}'  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_7.bim | sed 's/^ //g')  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_7.frq | sed 's/^ //g' | sed 's/ $//g') ) <(gunzip -dc ${dirI}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) > ${dirI}/temp_${out_name}_cleaning_7_1KG_merge_pos; wc -l ${dirI}/temp_${out_name}_cleaning_7_1KG_merge_pos
+  awk 'NR==FNR  {a[$1,$7]=$0;next} ($1,$3) in a {print a[$1,$3],$1,$3,$4,$5,$9,$13,$2}' <( awk 'NR==FNR {a[$2]=$4;next} $2 in a {print $0,a[$2]}'  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_7.bim | sed 's/^ //g')  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_7.frq | sed 's/^ //g' | sed 's/ $//g') ) <(gunzip -dc ${dirI2}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) > ${dirI}/temp_${out_name}_cleaning_7_1KG_merge_pos; wc -l ${dirI}/temp_${out_name}_cleaning_7_1KG_merge_pos
     #SDH 910865 610k_cas 539245 610k_con 524168 Omni_cas 790304 AMFS_cas 790296 AMFS_con 790270 WAMHS 793779 HEI_cas 211004. HEI_con: 213254. OAG1 834462 OAG2 684914 IBD 791715 QTWIN 372933 EPIGENE 331688 MIA 466762
   echo ""
   wc -l ${dirI}/temp_${out_name}_cleaning_7.bim
@@ -1679,7 +1652,7 @@ do
   echo -e "\nFor ${out_name} there are `  awk '$2!=$14' ${dirI}/temp_${out_name}_cleaning_7_1KG_merge_pos | wc -l` SNPs with mismatching IDs but the same position. This will include true ID differences and overlapping indels/SNPs\n"
     #SDH 59026 610k_cas 4658 610k_con 4150 Omni_cases 39197 AMFS_cas 39198 AMFS_con 39198 WAMHS 143046 (due to exm, and loss of non exm version if it has less info) HEI_cas 856 HEI_con 887 OAG1 11976 OAG2 2911 IBD 141699 (likewise exm) QTWIN 131501 EPIGENE 97347 MIA 41041
   #see 0.4 for this function
-  awk -v MAF=${MAF} -v DIFF=${DIFF} -f /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/SCRIPTS/awk_check_based_on_pos_1KG  ${dirI}/temp_${out_name}_cleaning_7_1KG_merge_pos
+  awk -v MAF=${MAF} -v DIFF=${DIFF} -f ${dirI}/awk_check_based_on_pos_1KG  ${dirI}/temp_${out_name}_cleaning_7_1KG_merge_pos
 
   #13/07/2016 Was not explcitely filtering out SNPs I couldn't align/map to 1kG as I did for the rsID match. This causes some downstream problems (ambigious SNPs that were not aligned, and thus not on the same strand, but retained in the dataset. So explicitely exclude them.
   awk 'NR==FNR {a[$1];next} !($2 in a) ' <(cat temp_aligned_ID_concordant temp_aligned_ID_disc temp_flipped_ID_concordant temp_flipped_ID_disc temp_ambigious_ID_MAF_to_high_too_assess temp_ambigious_aligned_ID_concordant_same_allele temp_ambigious_aligned_ID_disc_same_allele temp_ambigious_aligned_ID_concordant_other_allele temp_ambigious_aligned_ID_disc_other_allele temp_ambigious_flipped_ID_concordant_same_allele temp_ambigious_flipped_ID_disc_same_allele temp_ambigious_flipped_ID_concordant_other_allele temp_ambigious_flipped_ID_disc_other_allele temp_non_biallelic_snps_ID temp_indels_ID_aligned_same_allele temp_indels_ID_aligned_other_allele 2> /dev/null ) ${dirI}/temp_${out_name}_cleaning_7_1KG_merge_pos > ${dirI}/temp_${out_name}_unmappable_snps; wc -l ${dirI}/temp_${out_name}_unmappable_snps
@@ -1799,13 +1772,7 @@ do
   then
     echo -e "Found a file to update alleles for indels that could be aligned to 1kG. Using...\n"
     plink_1.90 --threads 1 --bfile ${dirI}/temp_${out_name}_cleaning_7 --update-alleles ${dirI}/temp_${out_name}_cleaning_7_update_indels --make-bed --out ${dirI}/temp_${out_name}_cleaning_7_temp --exclude ${dirI}/temp_${out_name}_cleaning_7_exclude_indels
-      #QMEGA_omni: --update-alleles: 32 variants updated. 803856 variants and 694 people pass filters and QC.
-      #AMFS_cases: --update-alleles: 32 variants updated. 803844 variants and 548 people pass filters and QC
-      #AMFS_controls: --update-alleles: 32 variants updated. 803821 variants and 430 people pass filters and QC.
-      #WAMHS --update-alleles: 1 variant updated. 926098 variants and 1273 people pass filters and QC.
-      #IBD --update-alleles: 1 variant updated. 916918 variants and 929 people pass filters and QC 
-      #EPIGENE --update-alleles: 1, QTWIN --update-alleles: 1
-      #MIA --update-alleles: 6308 variants updated. --exclude: 487688 variants remaining. 487688 variants and 1968 people pass filters and QC.
+    
     echo ""
     plink_1.90 --threads 1 --bfile ${dirI}/temp_${out_name}_cleaning_7_temp  --make-bed --out ${dirI}/temp_${out_name}_cleaning_7
     echo -e "\nFinished fixing indel alleles from I/D to match 1KG\n"
@@ -1815,7 +1782,6 @@ do
   
   #check line counts
   echo -e "For ${out_name} the function awk_check_based_on_pos_1KG reports `cat temp_aligned_ID_concordant temp_aligned_ID_disc temp_flipped_ID_concordant temp_flipped_ID_disc temp_ambigious_ID_MAF_to_high_too_assess temp_ambigious_aligned_ID_concordant_same_allele temp_ambigious_aligned_ID_disc_same_allele temp_ambigious_aligned_ID_concordant_other_allele temp_ambigious_aligned_ID_disc_other_allele temp_ambigious_flipped_ID_concordant_same_allele temp_ambigious_flipped_ID_disc_same_allele temp_ambigious_flipped_ID_concordant_other_allele temp_ambigious_flipped_ID_disc_other_allele temp_non_biallelic_snps_ID temp_indels_ID_aligned_same_allele temp_indels_ID_aligned_other_allele 2> /dev/null  | wc -l` SNPs"
-    #SDH 910437 - some double matches from overlapping indels/SNPs. 610k_cas 539050 610k_con 523993 Omni_cases 789925 AMFS_cas 789917 AMFS_con 789900 WAMHS 793459 HEI_cases: 210934 HEI_con 213179 OAG1 834129 OAG2 684627 IBD 791419 QTWIN 372664 EPIGENE 331536 MIA 466092
 
   #how many rsID pairs are dups (that is more of an issue)
   var_dup_2=`cat temp_aligned_ID_concordant temp_aligned_ID_disc temp_flipped_ID_concordant temp_flipped_ID_disc temp_ambigious_ID_MAF_to_high_too_assess temp_ambigious_aligned_ID_concordant_same_allele temp_ambigious_aligned_ID_disc_same_allele temp_ambigious_aligned_ID_concordant_other_allele temp_ambigious_aligned_ID_disc_other_allele temp_ambigious_flipped_ID_concordant_same_allele temp_ambigious_flipped_ID_disc_same_allele temp_ambigious_flipped_ID_concordant_other_allele temp_ambigious_flipped_ID_disc_other_allele temp_non_biallelic_snps_ID temp_indels_ID_aligned_same_allele temp_indels_ID_aligned_other_allele 2> /dev/null  | sort | uniq -d | wc -l`
@@ -1835,7 +1801,6 @@ do
     #0 SDH, 610k, 610k_controls. Then how is the N higher than what I started? If there is an indel and a SNP at the same site in one set but not the other you will get a duplicate in the other set. tr " " "\n" would merge the cols into one and I could test for dups that way but that won't help since all the concordant files will be dups in col 1 and 2. Make a combined remap file and see if that will end up with any duplicates. WAMHS, HEI_cases and cont 0 IBD 0 QTWIN EPI MIA 0
 
   echo -e "\nFor ${out_name} the function awk_check_based_on_pos_1KG reports `cat temp_aligned_ID_disc temp_flipped_ID_disc temp_ambigious_aligned_ID_disc_same_allele temp_ambigious_aligned_ID_disc_other_allele temp_ambigious_flipped_ID_disc_same_allele temp_ambigious_flipped_ID_disc_other_allele 2> /dev/null  | wc -l` SNPs with overlapping positions but different IDs\n"
-    #SDH 57547 610k_cas 4417 610k_con 3939 Omni_cases: 37753 AMFS_cas 37730 AMFS_con 37738 WAMHS 141401 HEI_cas 786 HEI_con: 812 OAG1 11356 OAG2 2592 IBD 140168 QTWIN 130117 EPIGENE 96268 MIA 33272
 
   #lets flip the SNPs before fixing names
   cat temp_flipped_ID_concordant temp_flipped_ID_disc temp_ambigious_flipped_ID_concordant_same_allele temp_ambigious_flipped_ID_disc_same_allele temp_ambigious_flipped_ID_concordant_other_allele temp_ambigious_flipped_ID_disc_other_allele  2> /dev/null | cut -d" " -f1 > temp_ID_flip_list; wc -l temp_ID_flip_list
@@ -1851,21 +1816,6 @@ do
 
   echo -e "\nFlipping SNPs to match 1KG, and excluding any ambigious SNPs with MAF too high to align and triallelic SNPs\n"
   plink_1.90 --threads 1 --bfile ${dirI}/temp_${out_name}_cleaning_7 --flip temp_ID_flip_list --make-bed --out ${dirI}/temp_${out_name}_cleaning_8 --exclude ${dirI}/temp_${out_name}_ID_excludes_SNPs
-    #SDH --flip: 28678 SNPs flipped. --exclude: 939132 variants remaining.
-    #610k_cases - --flip: 221 SNPs flipped --exclude: 548499 variants remaining. 548499 variants and 925 people pass filters and QC.
-    #610k_controls --flip: 62 SNPs flipped. --exclude: 533116 variants remaining. 533116 variants and 3954 people pass filters and QC.
-    #QMEGA_omni_cases: --flip: 2806 SNPs flipped. --exclude: 802710 variants remaining. 802710 variants and 694 people pass filters and QC.
-    #AMFS_cases: --flip: 2805 SNPs flipped. --exclude: 802678 variants remaining. 802678 variants and 548 people pass filters and QC.
-    #AMFS_controls: --flip: 2810 SNPs flipped. --exclude: 802663 variants remaining. 802663 variants and 430 people pass filters and QC.
-    #WAMHS --flip: 69915 SNPs flipped --exclude: 915499 variants remaining. 915499 variants and 1273 people pass filters and QC.
-    #HEI_cases: --flip: 398 SNPs flipped --exclude: 218694 variants remaining 218694. variants and 1217 people pass filters and QC
-    #HEI_con: --flip: 412 SNPs flipped  --exclude: 221008 variants remaining (none excluded) 221008 variants and 1221 people pass filters and QC
-    #OAG1 --flip: 5591 SNPs flipped. --exclude: 855941 variants remaining. 855941 variants and 651 people pass filters and QC.
-    #OAG2 --flip: 1325 SNPs flipped --exclude: 707444 variants remaining 707444 variants and 645 people pass filters and QC.
-    #IBD --flip: 51 SNPs flipped. --exclude: 912898 variants remaining. 912898 variants and 929 people pass filters and QC.
-    #QTWIN --flip: 0 SNPs flipped. --exclude: 450024 variants remaining. 450024 variants and 981 people pass filters and QC.
-    #EPIGENE --flip: 0 SNPs flipped. --exclude: 399153 variants remaining. 399153 variants and 784 people pass filters and QC.
-    #MIA --flip: 16387 --exclude: 486958 variants remaining. 486958 variants and 1968 people pass filters and QC.
   echo ""
   #now make a remapping list that makes sense. if only one is an rsID use that; if not use 1kg ID. 25/07/2016 found a bug - one match wasn't looking for ^rs so some SNPs (exm-rs) were falling into 2 cat
   awk '{
@@ -1876,28 +1826,12 @@ do
   if(!($2~/^rs/) && !($1~/^rs/))
     print $1,$2;
   }' <( cat temp_aligned_ID_disc temp_flipped_ID_disc temp_ambigious_aligned_ID_disc_same_allele temp_ambigious_aligned_ID_disc_other_allele temp_ambigious_flipped_ID_disc_same_allele temp_ambigious_flipped_ID_disc_other_allele 2> /dev/null  ) > temp_ID_remap; wc -l temp_ID_remap
-    #SDH 57099 610k 4403 610k_con 3928 Omni_cas 37703 AMFS_cas 37680 AMFS_con 37688 WAMHS 141273 Lots of exm IDs. HEI_cases: 768. HEI_con 794. OAG1 11090 OAG2 2515 IBD 140042 QTWIN 130109  EPIGENE 96260 MIA 31813
   #check those that weren't remapped
   echo -e "\nExample of the SNPs not being remapped - should be of the form rsXXX chrX:XXXXXX:"
   awk 'NR==FNR {a[$1,$2];next} !(($1,$2) in a)' temp_ID_remap <( cat temp_aligned_ID_disc temp_flipped_ID_disc temp_ambigious_aligned_ID_disc_same_allele temp_ambigious_aligned_ID_disc_other_allele temp_ambigious_flipped_ID_disc_same_allele temp_ambigious_flipped_ID_disc_other_allele 2> /dev/null ) | head
     #SDH; all look right  - rsIDs in illumina, chr1:XXXXX in 1kg
   echo ""
   plink_1.90 --threads 1 --bfile ${dirI}/temp_${out_name}_cleaning_8 --update-name temp_ID_remap --make-bed --out ${dirI}/temp_${out_name}_cleaning_9
-    #SDH --update-name: 57099 values updated. 939132 variants and 570 people pass filters and QC.
-    #610k_cases --update-name: 4403 values updated. 548499 variants and 925 people pass filters and QC.
-    #610k_controls --update-name: 3928 values updated 533116 variants and 3954 people pass filters and QC.
-    #QMEGA_omni_cases: --update-name: 37703 values updated. 802710 variants and 694 people pass filters and QC
-    #AMFS_cases:  --update-name: 37680 values updated. 802678 variants and 548 people pass filters and QC.
-    #AMFS_controls: --update-name: 37688 values updated. 802663 variants and 430 people pass filters and QC.
-    #WAMHS --update-name: 141273 values updated. 915499 variants and 1273 people pass filters and QC
-    #HEI_cases: --update-name: 768 values updated. 218694 variants and 1217 people pass filters and QC
-    #HEI_con: --update-name: 794 values updated. 221008 variants and 1221 people pass filters and QC.
-    #OAG1 --update-name: 11090 values updated. 855941 variants and 651 people pass filters and QC.
-    #OAG2 --update-name: 2515 values updated. 707444 variants and 645 people pass filters and QC.
-    #IBD --update-name: 140042 values updated. 912898 variants and 929 people pass filters and QC.
-    #QTWIN --update-name: 130109 values updated. 450024 variants and 981 people pass filters and QC.
-    #EPIGENE --update-name: 96260 values updated. 399153 variants and 784 people pass filters and QC.
-    #MIA --update-name: 31813 values updated 486958 variants and 1968 people pass filters and QC.
 
   #check for duplicates - not a terrible problem , just need to merge them on each other but I am not doing that as a default so add a check 
   var_dup_3=`awk '{print $2}' ${dirI}/temp_${out_name}_cleaning_9.bim | sort | uniq -d | wc -l`
@@ -1915,13 +1849,12 @@ do
   
   plink_1.90 --threads 1 --bfile ${dirI}/temp_${out_name}_cleaning_9 --freq --out ${dirI}/temp_${out_name}_cleaning_9 --silent
   echo ""
-  awk 'NR==FNR {a[$2]=$1" "$3" "$4" "$5" "$9" "$13;next} $2 in a {print $0,a[$2]}' <(gunzip -dc ${dirI}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) <( awk 'NR==FNR {a[$2]=$4;next} $2 in a {print $0,a[$2]}' <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_9.bim | sed 's/^ //g')  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_9.frq | sed 's/^ //g' | sed 's/ $//g') ) > ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_rsIDs; wc -l ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_rsIDs
-    #SDH 929876 610k_cas 547357 610k_con 532183 Omni_cases 799184 AMFS_cas 799152 AMFS_con 799137 WAMHS 807561 HEI_cas 217364 HEI_con 219629 OAG1 851560 OAG2 700942 IBD 805763 QTWIN 378781 EPIGENE 337213 MIA 463931
+  awk 'NR==FNR {a[$2]=$1" "$3" "$4" "$5" "$9" "$13;next} $2 in a {print $0,a[$2]}' <(gunzip -dc ${dirI2}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) <( awk 'NR==FNR {a[$2]=$4;next} $2 in a {print $0,a[$2]}' <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_9.bim | sed 's/^ //g')  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_9.frq | sed 's/^ //g' | sed 's/ $//g') ) > ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_rsIDs; wc -l ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_rsIDs
 
   echo -e "\n+++++++++++Re running awk_check_based_on_ID_1KG function to check SNPs paired with 1KG by ID have correct position following updating and aligning. Aligning amibigious SNPs where MAF < $MAF and MAF difference with 1KG is < $DIFF \n"
 
   #see 0.4 for the function used here but this will assign the SNPs to various categories - e.g. aligned_concordant - same ID, same position, same strand and so on
-  awk -v MAF=${MAF} -v DIFF=${DIFF} -f /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/SCRIPTS/awk_check_based_on_ID_1KG ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_rsIDs
+  awk -v MAF=${MAF} -v DIFF=${DIFF} -f ${dirI}/awk_check_based_on_ID_1KG ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_rsIDs
 
   #how many are aligned and concordant?
   cat temp_aligned_concordant temp_ambigious_aligned_concordant_same_allele temp_ambigious_aligned_concordant_other_allele temp_indels_aligned_same_allele temp_indels_aligned_other_allele  2> /dev/null | wc -l
@@ -1952,13 +1885,13 @@ do
       plink_1.90 --threads 1 --bfile ${dirI}/temp_${out_name}_cleaning_9_temp --make-bed --out ${dirI}/temp_${out_name}_cleaning_9
       plink_1.90 --threads 1 --bfile ${dirI}/temp_${out_name}_cleaning_9 --freq --out ${dirI}/temp_${out_name}_cleaning_9 --silent
       echo "" 
-      awk 'NR==FNR {a[$2]=$1" "$3" "$4" "$5" "$9" "$13;next} $2 in a {print $0,a[$2]}' <(gunzip -dc ${dirI}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) <( awk 'NR==FNR {a[$2]=$4;next} $2 in a {print $0,a[$2]}' <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_9.bim | sed 's/^ //g')  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_9.frq | sed 's/^ //g' | sed 's/ $//g') ) > ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_rsIDs; wc -l ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_rsIDs
+      awk 'NR==FNR {a[$2]=$1" "$3" "$4" "$5" "$9" "$13;next} $2 in a {print $0,a[$2]}' <(gunzip -dc ${dirI2}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) <( awk 'NR==FNR {a[$2]=$4;next} $2 in a {print $0,a[$2]}' <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_9.bim | sed 's/^ //g')  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_9.frq | sed 's/^ //g' | sed 's/ $//g') ) > ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_rsIDs; wc -l ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_rsIDs
 
       echo -e "\n+++As have had to update positions a second time checking if those now allows all common IDs to line up to 1KG positions"
 
       rm -f temp_flipped_concordant temp_flipped_chr_* temp_aligned_concordant temp_aligned_chr_* temp_ambigious_aligned_* temp_ambigious_flipped_* temp_non_biallelic_snps* temp_indels_aligned_* temp_aligned_ID_* temp_flipped_ID_* temp_ambigious*MAF_to_high_too_assess temp_ID_flip_list temp_ID_remap temp_indels_ID_aligned_*_allele
 
-      awk -v MAF=${MAF} -v DIFF=${DIFF} -f /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/SCRIPTS/awk_check_based_on_ID_1KG ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_rsIDs
+      awk -v MAF=${MAF} -v DIFF=${DIFF} -f ${dirI}/awk_check_based_on_ID_1KG ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_rsIDs
 
       cat temp_flipped_chr_disc_bp_conc temp_aligned_chr_disc_bp_disc temp_aligned_chr_disc_bp_conc temp_ambigious_aligned_chr_disc_bp_conc_same_allele temp_ambigious_aligned_chr_disc_bp_disc_same_allele temp_ambigious_aligned_chr_disc_bp_conc_other_allele temp_ambigious_aligned_chr_disc_bp_disc_other_allele temp_ambigious_flipped_chr_disc_bp_conc_same_allele temp_ambigious_flipped_chr_disc_bp_disc_same_allele temp_ambigious_flipped_chr_disc_bp_conc_other_allele temp_ambigious_flipped_chr_disc_bp_disc_other_allele 2> /dev/null > temp_${out_name}_chr_disc
 
@@ -2011,7 +1944,7 @@ do
 
   #13/07/2016 as above; this command works except then there is overlapping indels; replaced with the newer version where match PLINK to 1kg rather than the reverse
   ##awk 'NR==FNR {a[$1,$3]=$1" "$3" "$4" "$5" "$9" "$13" "$2;next} ($1,$7) in a {print $0,a[$1,$7]}' <(gunzip -dc ${dirI}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) <( awk 'NR==FNR {a[$2]=$4;next} $2 in a {print $0,a[$2]}' <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_9.bim | sed 's/^ //g')  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_9.frq | sed 's/^ //g' | sed 's/ $//g') ) > ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_pos; wc -l ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_pos
-  awk 'NR==FNR  {a[$1,$7]=$0;next} ($1,$3) in a {print a[$1,$3],$1,$3,$4,$5,$9,$13,$2}' <( awk 'NR==FNR {a[$2]=$4;next} $2 in a {print $0,a[$2]}'  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_9.bim | sed 's/^ //g')  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_9.frq | sed 's/^ //g' | sed 's/ $//g') ) <(gunzip -dc ${dirI}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) > ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_pos; wc -l ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_pos
+  awk 'NR==FNR  {a[$1,$7]=$0;next} ($1,$3) in a {print a[$1,$3],$1,$3,$4,$5,$9,$13,$2}' <( awk 'NR==FNR {a[$2]=$4;next} $2 in a {print $0,a[$2]}'  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_9.bim | sed 's/^ //g')  <(sed 's/ \+/ /g' ${dirI}/temp_${out_name}_cleaning_9.frq | sed 's/^ //g' | sed 's/ $//g') ) <(gunzip -dc ${dirI2}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) > ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_pos; wc -l ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_pos
     #SDH: 909685 so ~200 more SNPs; 610k_cas 539181 610k_con 524117 Omni_cases 789163 AMFS_cas 789131, AMFS_con 789113 WAMHS 792360 HEI_cas 210994. HEI_con 213244 OAG1 834120 OAG2 684823 IBD 790408 QTWIN 371654 EPIGENE 330689 MIA 465572
   echo ""
   wc -l ${dirI}/temp_${out_name}_cleaning_9.bim
@@ -2019,7 +1952,7 @@ do
   echo -e "\nFor ${out_name} there are `awk '$2!=$14' ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_pos | wc -l` SNPs with mismatching IDs but the same position. This will include true ID differences and overlapping indels/SNPs, and SNPs where the 1KG ID was out of date (e.g. PLINK rsXXX, 1KG chrX:XXXX)\n"
     #SDH: 747 - all indels vs SNPs, or 1KG IDs are CHR:POS. 610k_cas 191. 610k_con 171. Omni_cas, AMFS_cas, AMFS_con 350. HEI_cases 78. HEI_con 83 OAG1 544 OAG2 305 IBD 434 WAMHS 354 QTWIN 113  EPIGENE 88 MIA 8037
   #see 0.4 for this function
-  awk -v MAF=${MAF} -v DIFF=${DIFF} -f /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/SCRIPTS/awk_check_based_on_pos_1KG  ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_pos
+  awk -v MAF=${MAF} -v DIFF=${DIFF} -f ${dirI}/awk_check_based_on_pos_1KG  ${dirI}/temp_${out_name}_cleaning_9_1KG_merge_pos
 
   cat temp_aligned_ID_concordant temp_ambigious_aligned_ID_concordant_same_allele temp_ambigious_aligned_ID_concordant_other_allele 2> /dev/null | wc -l
     #SDH 908938 610k_cas 538990 610k_con 523946 Omni_cases 802713 AMFS_cas 788781 AMFS_con 788770 WAMHS 792006 HEI_cas 210916. HEI_con 213161 OAG1 833576 OAG2 684518 IBD 790058 QTWIN 371541  EPIGENE 330601 MIA 457535
@@ -2073,7 +2006,7 @@ do
     #SDH 66; 610k_cases and 610k controls 10. Omni_case: 66. AMFS_cas 65. AMFS_con 74. WAMHS 22. HEI_cases and con: 0 OAG1 38 OAG2 51 IBD 18 QTWIN 6 EPIGENE 5 MIA 30
   echo ""
   #do any match with 1KG by ID (should be zero, unless I messed up)
-  var_rem_amb_ID=`awk 'NR==FNR {a[$2];next} $2 in a' <(gunzip -dc ${dirI}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) ${dirI}/temp_${out_name}_cleaning_9_ambigious_high_MAF | wc -l`
+  var_rem_amb_ID=`awk 'NR==FNR {a[$2];next} $2 in a' <(gunzip -dc ${dirI2}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) ${dirI}/temp_${out_name}_cleaning_9_ambigious_high_MAF | wc -l`
   if [[ $var_rem_amb_ID != 0 ]]
   then
     echo -e "\nWarning. There remains ambigious high MAF SNPS that map to 1KG by ID, an earlier step must have failed. Exiting"
@@ -2081,7 +2014,7 @@ do
   fi  #
 
   #do any match with 1KG by pos (should be zero, unless I messed up). 30/06/2016 though the earlier functions werent working as SHD still have 4 overlaps but this check here is too simple. There are 4 high maf ambigious SNPs that share a position with a different INDEL, and shouldn't be counted so added second step to check alleles, which means needs to print out allleles from 1kG
-  var_rem_amb_POS=`awk 'NR==FNR {a[$1,$3]=$4" "$5;next} ($1,$4) in a {print $0,a[$1,$4]}'  <(gunzip -dc ${dirI}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) <(sed 's/\t\+/ /g' ${dirI}/temp_${out_name}_cleaning_9_ambigious_high_MAF) | awk '($5==$8 && $6==$9) || ($5==$9 && $6==$8) ' | wc -l`
+  var_rem_amb_POS=`awk 'NR==FNR {a[$1,$3]=$4" "$5;next} ($1,$4) in a {print $0,a[$1,$4]}'  <(gunzip -dc ${dirI2}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz) <(sed 's/\t\+/ /g' ${dirI}/temp_${out_name}_cleaning_9_ambigious_high_MAF) | awk '($5==$8 && $6==$9) || ($5==$9 && $6==$8) ' | wc -l`
 
   if [[ $var_rem_amb_POS != 0 ]]
   then
@@ -2090,10 +2023,10 @@ do
   fi  
 
   #12/07/2016 Need to filter out any SNP that isn't in 1KG and is ambigious - can't easily align it between sets. Need to filter 1kg for amb as well as overlapping indels are causing a few ambigious SNPs to slip through (as in they were incorrectly passing the positional match)
-  awk 'NR==FNR {a[$2];next} !($2 in a) {print $2}'  <(gunzip -dc ${dirI}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz | awk '($4=="A" && $5=="T") || ($4=="T" && $5=="A") || ($4=="G" && $5=="C") || ($4=="C" && $5=="G")' )  <(awk '($3=="A" && $4=="T") || ($3=="T" && $4=="A") || ($3=="G" && $4=="C") || ($3=="C" && $4=="G") ' ${dirI}/temp_${out_name}_cleaning_9.frq)  >  ${dirI}/temp_${out_name}_cleaning_9_non_1KG_amb_rsID; wc -l ${dirI}/temp_${out_name}_cleaning_9_non_1KG_amb_rsID
+  awk 'NR==FNR {a[$2];next} !($2 in a) {print $2}'  <(gunzip -dc ${dirI2}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz | awk '($4=="A" && $5=="T") || ($4=="T" && $5=="A") || ($4=="G" && $5=="C") || ($4=="C" && $5=="G")' )  <(awk '($3=="A" && $4=="T") || ($3=="T" && $4=="A") || ($3=="G" && $4=="C") || ($3=="C" && $4=="G") ' ${dirI}/temp_${out_name}_cleaning_9.frq)  >  ${dirI}/temp_${out_name}_cleaning_9_non_1KG_amb_rsID; wc -l ${dirI}/temp_${out_name}_cleaning_9_non_1KG_amb_rsID
     #SDH 798, 610k_cases 30, 610k_controls 29, QMEGA_omni_cases, AMFS_cases, AMFS_controls 236. WAMHS 12466. HEI_cases and con 0 OAG1 337 OAG2 347 IBD 12274 QTWIN 7205 EPIGENE 6095 MIA 1585
   echo ""
-  awk 'NR==FNR {a[$1,$3];next} !(($1,$4) in a) {print $2}' <(gunzip -dc ${dirI}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz | awk '($4=="A" && $5=="T") || ($4=="T" && $5=="A") || ($4=="G" && $5=="C") || ($4=="C" && $5=="G")' )  <(awk '($5=="A" && $6=="T") || ($5=="T" && $6=="A") || ($5=="G" && $6=="C") || ($5=="C" && $6=="G") ' ${dirI}/temp_${out_name}_cleaning_9.bim) >  ${dirI}/temp_${out_name}_cleaning_9_non_1KG_amb_pos; wc -l ${dirI}/temp_${out_name}_cleaning_9_non_1KG_amb_pos
+  awk 'NR==FNR {a[$1,$3];next} !(($1,$4) in a) {print $2}' <(gunzip -dc ${dirI2}/ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz | awk '($4=="A" && $5=="T") || ($4=="T" && $5=="A") || ($4=="G" && $5=="C") || ($4=="C" && $5=="G")' )  <(awk '($5=="A" && $6=="T") || ($5=="T" && $6=="A") || ($5=="G" && $6=="C") || ($5=="C" && $6=="G") ' ${dirI}/temp_${out_name}_cleaning_9.bim) >  ${dirI}/temp_${out_name}_cleaning_9_non_1KG_amb_pos; wc -l ${dirI}/temp_${out_name}_cleaning_9_non_1KG_amb_pos
     #SDH 1019, 610k_cases 55, 610_con 48, Omni_cases and AMFS_cas 353, AMFS_con 356, WAMHS 12491 - all exm. HEI_Cases and con 0 OAG1 514 OAG2 377 IBD 12298 QTWIN 7238 EPIGENE 6100 MIA 1452
   echo ""
   #so need to drop any SNP that is in BOTH files, not just one. 
@@ -2130,9 +2063,6 @@ done #lift over data and align to 1kg.
 echo -e "\nFinito\n"
 exit
 
-+++++++++++++++++++done as far as here for MIA data, not worth going futher until have controls for MIA (needed to get MIA ready for the survival work++++++
-
-
 #clean up interim files
 rm -f temp_2016_cleaning_SDH2.* temp_2016_cleaning_SDH_2.* temp_2016_cleaning_AMFS temp_2016_cleaning_AMFS.* temp_2016_cleaning_AMFS_cases.* temp_2016_cleaning_AMFS_controls.* temp_2016_cleaning_1.* temp_2016_cleaning_2.* temp_2016_cleaning_3.* temp_2016_cleaning_4.* temp_2016_cleaning_QMEGA_omni_cases.* temp_2016_cleaning_non_610k temp_2016_cleaning_QMEGA_610k.* temp_2016_cleaning_QMEGA_610k_cases.* temp_2016_cleaning_QMEGA_610k_controls.* temp_2016_cleaning_WAMHS_cases.* temp_2016_cleaning_IBD_controls.* temp_2016_cleaning_OAGphase*_controls.* temp_2016_cleaning_HEIDELBERG_controls.* temp_2016_cleaning_HEIDELBERG_cases.* ${dirI}/temp_2016_cleaning_EPIGENE_cases.* ${dirI}/temp_2016_cleaning_QTWIN_controls.*
 
@@ -2141,129 +2071,129 @@ rm -f temp_2016_cleaning_SDH2.* temp_2016_cleaning_SDH_2.* temp_2016_cleaning_AM
 ##################################################################################
 
 #loop to turn on/off
-for x in #1
-do
+#for x in #1
+#do
 
-  echo -e "\nConverting control sets into case sets for test of flipping and other alignment...\n"
-  for i in temp_2016_cleaning_QTWIN_controls_aligned_1KG temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG temp_2016_cleaning_SDH_2_aligned_1KG temp_2016_cleaning_AMFS_controls_aligned_1KG temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG temp_2016_cleaning_OAGphase1_controls_aligned_1KG temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG
-  do
-    awk '{print $1,$2,2}' ${dirI}/${i}.fam > ${dirI}/${i}_dummy_case
-    plink_1.90 --threads 1 --bfile ${dirI}/${i} --pheno ${dirI}/${i}_dummy_case --make-bed --out ${dirI}/${i}_dummy_case --silent
-  done
+ # echo -e "\nConverting control sets into case sets for test of flipping and other alignment...\n"
+  #for i in temp_2016_cleaning_QTWIN_controls_aligned_1KG temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG temp_2016_cleaning_SDH_2_aligned_1KG temp_2016_cleaning_AMFS_controls_aligned_1KG temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG temp_2016_cleaning_OAGphase1_controls_aligned_1KG temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG
+  #do
+   # awk '{print $1,$2,2}' ${dirI}/${i}.fam > ${dirI}/${i}_dummy_case
+    #plink_1.90 --threads 1 --bfile ${dirI}/${i} --pheno ${dirI}/${i}_dummy_case --make-bed --out ${dirI}/${i}_dummy_case --silent
+  #done
 
   #there are some SNPs that are by designed not aligned (e.g. rs10305752 is missing in 610k dataset, and is an indel, so does not have its alleles fixed where as it is in omni sets) so have a file of SNPs to exclude I made by manually flip/merging. only exclude these for control:control merges
-  wc -l ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt
+  #wc -l ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt
 
   #still about ~20 multiple positions warnings, and ~1k SNPs that need flipping. After some concerning results realised I was carryign through bad SNPs (extreme HWE results) because controls are now cases - clean properly to find actual problems
-  k=temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG_dummy_case
-  for i in temp_2016_cleaning_QTWIN_controls_aligned_1KG #temp_2016_cleaning_SDH_2_aligned_1KG temp_2016_cleaning_AMFS_controls_aligned_1KG temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG temp_2016_cleaning_OAGphase1_controls_aligned_1KG temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG
-  do
-    echo -e "\nComparing ${k} and ${i}\n"
-    plink_1.90 --threads 1 --bfile ${dirI}/${k} --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    plink_1.90 --threads 1 --bfile ${dirI}/${k} --flip ${dirI}/${i}_${k}-merge.missnp --make-bed --out ${dirI}/${k}_flip --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    plink_1.90 --threads 1 --bfile ${dirI}/${k}_flip --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k} --geno 0.03 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${i}_${k}_2 --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k}_2 --mind 0.03 --geno 0.03 --hwe 5e-4 midp --assoc --out ${dirI}/${i}_${k} --silent
-    echo -e "${k} vs ${i}"
-    awk 'NR==1 || $9<5e-6' ${dirI}/${i}_${k}.assoc
-    echo ""
+  #k=temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG_dummy_case
+  #for i in temp_2016_cleaning_QTWIN_controls_aligned_1KG #temp_2016_cleaning_SDH_2_aligned_1KG temp_2016_cleaning_AMFS_controls_aligned_1KG temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG temp_2016_cleaning_OAGphase1_controls_aligned_1KG temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG
+  #do
+   # echo -e "\nComparing ${k} and ${i}\n"
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k} --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k} --flip ${dirI}/${i}_${k}-merge.missnp --make-bed --out ${dirI}/${k}_flip --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k}_flip --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k} --geno 0.03 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${i}_${k}_2 --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k}_2 --mind 0.03 --geno 0.03 --hwe 5e-4 midp --assoc --out ${dirI}/${i}_${k} --silent
+    #echo -e "${k} vs ${i}"
+    #awk 'NR==1 || $9<5e-6' ${dirI}/${i}_${k}.assoc
+    #echo ""
     #clean up
-    rm -f ${dirI}/${k}_flip.* ${dirI}/${i}_${k}-merge.missnp ${dirI}/${i}_${k}*
-  done #compare QMEGA_610k_controls with SDH and AMFs controls
+    #rm -f ${dirI}/${k}_flip.* ${dirI}/${i}_${k}-merge.missnp ${dirI}/${i}_${k}*
+  #done #compare QMEGA_610k_controls with SDH and AMFs controls
 
-  k=temp_2016_cleaning_SDH_2_aligned_1KG_dummy_case
-  for i in temp_2016_cleaning_QTWIN_controls_aligned_1KG #temp_2016_cleaning_AMFS_controls_aligned_1KG temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG temp_2016_cleaning_OAGphase1_controls_aligned_1KG temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG
-  do
-    plink_1.90 --threads 1 --bfile ${dirI}/${k} --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${k} --flip ${dirI}/${i}_${k}-merge.missnp --make-bed --out ${dirI}/${k}_flip --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${k}_flip --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k} --geno 0.03 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${i}_${k}_2 --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k}_2 --mind 0.03 --geno 0.03 --hwe 5e-4 midp --assoc --out ${dirI}/${i}_${k} --silent
-    echo -e "${k} vs ${i}"
-    awk 'NR==1 || $9<5e-6' ${dirI}/${i}_${k}.assoc
-    echo ""
+  #k=temp_2016_cleaning_SDH_2_aligned_1KG_dummy_case
+  #for i in temp_2016_cleaning_QTWIN_controls_aligned_1KG #temp_2016_cleaning_AMFS_controls_aligned_1KG temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG temp_2016_cleaning_OAGphase1_controls_aligned_1KG temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG
+  #do
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k} --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #echo ""
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k} --flip ${dirI}/${i}_${k}-merge.missnp --make-bed --out ${dirI}/${k}_flip --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #echo ""
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k}_flip --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #echo ""
+    #plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k} --geno 0.03 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${i}_${k}_2 --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k}_2 --mind 0.03 --geno 0.03 --hwe 5e-4 midp --assoc --out ${dirI}/${i}_${k} --silent
+    #echo -e "${k} vs ${i}"
+    #awk 'NR==1 || $9<5e-6' ${dirI}/${i}_${k}.assoc
+    #echo ""
     #clean up
-    rm -f ${dirI}/${k}_flip.* ${dirI}/${i}_${k}-merge.missnp ${dirI}/${i}_${k}*
-  done
+    #rm -f ${dirI}/${k}_flip.* ${dirI}/${i}_${k}-merge.missnp ${dirI}/${i}_${k}*
+  #done
 
-  k=temp_2016_cleaning_AMFS_controls_aligned_1KG_dummy_case
-  for i in temp_2016_cleaning_QTWIN_controls_aligned_1KG #temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG temp_2016_cleaning_OAGphase1_controls_aligned_1KG temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG
-  do
-    plink_1.90 --threads 1 --bfile ${dirI}/${k} --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${k} --flip ${dirI}/${i}_${k}-merge.missnp --make-bed --out ${dirI}/${k}_flip --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${k}_flip --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k} --geno 0.03 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${i}_${k}_2 --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k}_2 --mind 0.03 --geno 0.03 --hwe 5e-4 midp --assoc --out ${dirI}/${i}_${k} --silent
-    echo -e "${k} vs ${i}"
-    awk 'NR==1 || $9<5e-6' ${dirI}/${i}_${k}.assoc
-    echo ""
+  #k=temp_2016_cleaning_AMFS_controls_aligned_1KG_dummy_case
+  #for i in temp_2016_cleaning_QTWIN_controls_aligned_1KG #temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG temp_2016_cleaning_OAGphase1_controls_aligned_1KG temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG
+  #do
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k} --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #echo ""
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k} --flip ${dirI}/${i}_${k}-merge.missnp --make-bed --out ${dirI}/${k}_flip --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #echo ""
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k}_flip --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #echo ""
+    #plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k} --geno 0.03 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${i}_${k}_2 --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k}_2 --mind 0.03 --geno 0.03 --hwe 5e-4 midp --assoc --out ${dirI}/${i}_${k} --silent
+    #echo -e "${k} vs ${i}"
+    #awk 'NR==1 || $9<5e-6' ${dirI}/${i}_${k}.assoc
+    #echo ""
     #clean up
-    rm -f ${dirI}/${k}_flip.* ${dirI}/${i}_${k}-merge.missnp ${dirI}/${i}_${k}*
-  done
+    #rm -f ${dirI}/${k}_flip.* ${dirI}/${i}_${k}-merge.missnp ${dirI}/${i}_${k}*
+  #done
 
-  k=temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG_dummy_case
-  for i in temp_2016_cleaning_QTWIN_controls_aligned_1KG #temp_2016_cleaning_OAGphase1_controls_aligned_1KG temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG
-  do
-    plink_1.90 --threads 1 --bfile ${dirI}/${k} --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${k} --flip ${dirI}/${i}_${k}-merge.missnp --make-bed --out ${dirI}/${k}_flip --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${k}_flip --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k} --geno 0.03 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${i}_${k}_2 --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k}_2 --mind 0.03 --geno 0.03 --hwe 5e-4 midp --assoc --out ${dirI}/${i}_${k} --silent
-    echo -e "${k} vs ${i}"
-    awk 'NR==1 || $9<5e-6' ${dirI}/${i}_${k}.assoc
-    echo ""
+  #k=temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG_dummy_case
+  #for i in temp_2016_cleaning_QTWIN_controls_aligned_1KG #temp_2016_cleaning_OAGphase1_controls_aligned_1KG temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG
+  #do
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k} --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #echo ""
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k} --flip ${dirI}/${i}_${k}-merge.missnp --make-bed --out ${dirI}/${k}_flip --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #echo ""
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k}_flip --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #echo ""
+    #plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k} --geno 0.03 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${i}_${k}_2 --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k}_2 --mind 0.03 --geno 0.03 --hwe 5e-4 midp --assoc --out ${dirI}/${i}_${k} --silent
+    #echo -e "${k} vs ${i}"
+    #awk 'NR==1 || $9<5e-6' ${dirI}/${i}_${k}.assoc
+    #echo ""
     #clean up
-    rm -f ${dirI}/${k}_flip.* ${dirI}/${i}_${k}-merge.missnp ${dirI}/${i}_${k}*
-  done
+    #rm -f ${dirI}/${k}_flip.* ${dirI}/${i}_${k}-merge.missnp ${dirI}/${i}_${k}*
+  #done
 
-  k=temp_2016_cleaning_OAGphase1_controls_aligned_1KG_dummy_case
-  for i in temp_2016_cleaning_QTWIN_controls_aligned_1KG #temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG
-  do
-    plink_1.90 --threads 1 --bfile ${dirI}/${k} --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${k} --flip ${dirI}/${i}_${k}-merge.missnp --make-bed --out ${dirI}/${k}_flip --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${k}_flip --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k} --geno 0.03 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${i}_${k}_2 --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k}_2 --mind 0.03 --geno 0.03 --hwe 5e-4 midp --assoc --out ${dirI}/${i}_${k} --silent
-    echo -e "${k} vs ${i}"
-    awk 'NR==1 || $9<5e-6' ${dirI}/${i}_${k}.assoc
-    echo ""
+  #k=temp_2016_cleaning_OAGphase1_controls_aligned_1KG_dummy_case
+  #for i in temp_2016_cleaning_QTWIN_controls_aligned_1KG #temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG
+  #do
+   # plink_1.90 --threads 1 --bfile ${dirI}/${k} --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #echo ""
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k} --flip ${dirI}/${i}_${k}-merge.missnp --make-bed --out ${dirI}/${k}_flip --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #echo ""
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k}_flip --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #echo ""
+    #plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k} --geno 0.03 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${i}_${k}_2 --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k}_2 --mind 0.03 --geno 0.03 --hwe 5e-4 midp --assoc --out ${dirI}/${i}_${k} --silent
+    #echo -e "${k} vs ${i}"
+    #awk 'NR==1 || $9<5e-6' ${dirI}/${i}_${k}.assoc
+    #echo ""
     #clean up
-    rm -f ${dirI}/${k}_flip.* ${dirI}/${i}_${k}-merge.missnp ${dirI}/${i}_${k}*
-  done
+    #rm -f ${dirI}/${k}_flip.* ${dirI}/${i}_${k}-merge.missnp ${dirI}/${i}_${k}*
+  #done
 
-  k=temp_2016_cleaning_OAGphase2_controls_aligned_1KG_dummy_case
-  for i in temp_2016_cleaning_QTWIN_controls_aligned_1KG #temp_2016_cleaning_IBD_controls_aligned_1KG
-  do
-    plink_1.90 --threads 1 --bfile ${dirI}/${k} --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${k} --flip ${dirI}/${i}_${k}-merge.missnp --make-bed --out ${dirI}/${k}_flip --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${k}_flip --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k} --geno 0.03 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${i}_${k}_2 --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
-    plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k}_2 --mind 0.03 --geno 0.03 --hwe 5e-4 midp --assoc --out ${dirI}/${i}_${k} --silent
-    echo -e "${k} vs ${i}"
-    awk 'NR==1 || $9<5e-6' ${dirI}/${i}_${k}.assoc
-    echo ""
+  #k=temp_2016_cleaning_OAGphase2_controls_aligned_1KG_dummy_case
+  #for i in temp_2016_cleaning_QTWIN_controls_aligned_1KG #temp_2016_cleaning_IBD_controls_aligned_1KG
+  #do
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k} --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #echo ""
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k} --flip ${dirI}/${i}_${k}-merge.missnp --make-bed --out ${dirI}/${k}_flip --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #echo ""
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k}_flip --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #echo ""
+    #plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k} --geno 0.03 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${i}_${k}_2 --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
+    #plink_1.90 --threads 1 --bfile ${dirI}/${i}_${k}_2 --mind 0.03 --geno 0.03 --hwe 5e-4 midp --assoc --out ${dirI}/${i}_${k} --silent
+    #echo -e "${k} vs ${i}"
+    #awk 'NR==1 || $9<5e-6' ${dirI}/${i}_${k}.assoc
+    #echo ""
     #clean up
-    rm -f ${dirI}/${k}_flip.* ${dirI}/${i}_${k}-merge.missnp ${dirI}/${i}_${k}*
-  done
+    #rm -f ${dirI}/${k}_flip.* ${dirI}/${i}_${k}-merge.missnp ${dirI}/${i}_${k}*
+  #done
 
   #clean up
-  rm -f ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_dummy_case* ${dirI}/temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG_dummy_case* ${dirI}/temp_2016_cleaning_AMFS_controls_aligned_1KG_dummy_case* ${dirI}/temp_2016_cleaning_OAGphase*_controls_aligned_1KG_dummy_case* ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_dummy_case* ${dirI}/temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG_dummy_case* ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG_dummy_case.* ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_dummy_case.* ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_dummy_case
-done #loop to turn control comparison on/off
+  #rm -f ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_dummy_case* ${dirI}/temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG_dummy_case* ${dirI}/temp_2016_cleaning_AMFS_controls_aligned_1KG_dummy_case* ${dirI}/temp_2016_cleaning_OAGphase*_controls_aligned_1KG_dummy_case* ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_dummy_case* ${dirI}/temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG_dummy_case* ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG_dummy_case.* ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_dummy_case.* ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_dummy_case
+#done #loop to turn control comparison on/off
 
   #QTWIN controls vs QMEGA_610k
   #CHR         SNP         BP   A1      F_A      F_U   A2        CHISQ            P           OR 
@@ -2588,9 +2518,9 @@ done #loop to turn control comparison on/off
 ##################################################################################
 #given the unusual SNPs observed I wonder if I should perform so basic cleaning within the seperate case control sets as some extreme examples might be otherwise missed (e.g. a SNP with MAF 0 in cases and 6% in cases might pass a 0.001 maf filter in the combined set
 #So minimal cleaning should still retain SNPs with freq higher than 0.001, filter on the most extreme hwe (5e-10, so treat them all as cases) and normal missingness (0.03) because again a SNP might be missing in 5% controls and 0% cases and pass in the combined set
-for x in #1
-do
-  for i in #temp_2016_cleaning_AMFS_cases_aligned_1KG temp_2016_cleaning_AMFS_controls_aligned_1KG temp_2016_cleaning_HEIDELBERG_cases_aligned_1KG temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG temp_2016_cleaning_OAGphase1_controls_aligned_1KG temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_QMEGA_610k_cases_aligned_1KG temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG temp_2016_cleaning_SDH_2_aligned_1KG temp_2016_cleaning_WAMHS_cases_aligned_1KG
+#for x in #1
+#do
+  for i in temp_20150615_Hewitt_Non-advancedGlaucoma_aligned_1KG temp_20150615_Hewitt_Progressa_aligned_1KG  #temp_2016_cleaning_AMFS_cases_aligned_1KG temp_2016_cleaning_AMFS_controls_aligned_1KG temp_2016_cleaning_HEIDELBERG_cases_aligned_1KG temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG temp_2016_cleaning_OAGphase1_controls_aligned_1KG temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_QMEGA_610k_cases_aligned_1KG temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG temp_2016_cleaning_SDH_2_aligned_1KG temp_2016_cleaning_WAMHS_cases_aligned_1KG
   do
    echo -e  "\nCleaning ${i} to minimal settings - maf 0.001, geno 0.03, mind 0.03, --hwe 5e-10 midp include-nonctrl\n"
    plink_1.90 --threads 1 --bfile ${dirI}/${i} --geno 0.03 --mind 0.03 --maf 0.001 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${i}_min_clean
@@ -2610,19 +2540,20 @@ do
     #EPIGENE 393059 variants loaded 784 people (520 males, 264 females) loaded; 0 people removed due to missing genotype data (--mind) 97 variants removed due to missing genotype data (--geno). --hwe: 0 . 97028 variants removed due to minor allele threshold(s) 295934 variants and 784 people pass filters and QC.
 
   #temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG needs to be cleaned seperately; 0.03 missingness dropping 2160 people, I bet due to differences between 610k and 670k arrays. Likewise need to handle QTWIN diff - pulled from a larger set of genotypes so a number of 0 freq SNPs
-  for k in temp_2016_cleaning_QTWIN_controls_aligned_1KG temp_2016_cleaning_EPIGENE_cases_aligned_1KG  #temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG
+  for k in temp_ENDO_Release8_Observed_CoreExome_aligned_1KG  #temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG
   do
-    plink_1.90 --threads 1 --bfile ${dirI}/${k} --geno 0.3 --make-bed --out ${dirI}/${k}_2
+    plink_1.90 --threads 1 --bfile ${dirI}/${k} --geno 0.03 --maf 0.001 --hwe 0.0001 --make-bed --out ${dirI}/${k}_2
+    plink_1.90 --threads 1 --bfile ${dirI}/${k}_2 --mind 0.03 --make-bed --out ${dirI}/${k}_min_clean
     #QMEGA_610k 533087 variants loaded, 3954 people (836 males, 3118 females) loaded. 29637 variants removed due to --geno. 503450 variants and 3954 people pass filters and QC.
     #QTWIN 442820 variants loaded from .bim file. Total genotyping rate is 0.934486. 31052 variants removed due to -geno. 411768 variants and 981 people pass filters and QC.
-    echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${k}_2 --geno 0.03 --mind 0.03 --maf 0.001 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${k}_min_clean
+    #echo ""
+    #plink_1.90 --threads 1 --bfile ${dirI}/${k}_2 --geno 0.03 --mind 0.03 --maf 0.001 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${k}_min_clean
     #QMEGA_610k 503450 variants loaded; 3954 people (836 males, 3118 females) loaded; 1 person removed due to --mind; 115 variants removed due to --geno; --hwe: 0 variants removed 0 variants removed due to maf; 503335 variants and 3953 people pass filters and QC.
     #QTWIN 411768 variants loaded from .bim file 0 people removed--mind. Total genotyping rate is 0.999682 157 variants removed due to  (--geno) --hwe: 4 variants removed due to Hardy-Weinberg exact test. 98106 variants removed due to minor allele threshold(s) 313501 variants and 981 people pass filters and QC.
-    rm -f ${dirI}/${k}_2
+    rm -f ${dirI}/${k}_2*
   done #handling 610/QTWIN sep
 
-done #loop on/off
+#done #loop on/off
 
 ##################################################################################
 #5.0 Recombine the control and case sets
