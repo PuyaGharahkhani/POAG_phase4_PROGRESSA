@@ -2061,25 +2061,37 @@ sort ${dirI}/temp_${out_name}_cleaning_9_non_1KG_amb_exclude_pre | uniq > ${dirI
 done #lift over data and align to 1kg. 
 
 echo -e "\nFinito\n"
-exit
+#exit
 
 #clean up interim files
 rm -f temp_2016_cleaning_SDH2.* temp_2016_cleaning_SDH_2.* temp_2016_cleaning_AMFS temp_2016_cleaning_AMFS.* temp_2016_cleaning_AMFS_cases.* temp_2016_cleaning_AMFS_controls.* temp_2016_cleaning_1.* temp_2016_cleaning_2.* temp_2016_cleaning_3.* temp_2016_cleaning_4.* temp_2016_cleaning_QMEGA_omni_cases.* temp_2016_cleaning_non_610k temp_2016_cleaning_QMEGA_610k.* temp_2016_cleaning_QMEGA_610k_cases.* temp_2016_cleaning_QMEGA_610k_controls.* temp_2016_cleaning_WAMHS_cases.* temp_2016_cleaning_IBD_controls.* temp_2016_cleaning_OAGphase*_controls.* temp_2016_cleaning_HEIDELBERG_controls.* temp_2016_cleaning_HEIDELBERG_cases.* ${dirI}/temp_2016_cleaning_EPIGENE_cases.* ${dirI}/temp_2016_cleaning_QTWIN_controls.*
 
 ##################################################################################
-#4.0 Combine the control sets to test for errors in flipping etc
+#4.0 Combine the case sets to do a case-case GWAS 
 ##################################################################################
 
 #loop to turn on/off
 #for x in #1
 #do
 
- # echo -e "\nConverting control sets into case sets for test of flipping and other alignment...\n"
-  #for i in temp_2016_cleaning_QTWIN_controls_aligned_1KG temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG temp_2016_cleaning_SDH_2_aligned_1KG temp_2016_cleaning_AMFS_controls_aligned_1KG temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG temp_2016_cleaning_OAGphase1_controls_aligned_1KG temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG
-  #do
-   # awk '{print $1,$2,2}' ${dirI}/${i}.fam > ${dirI}/${i}_dummy_case
-    #plink_1.90 --threads 1 --bfile ${dirI}/${i} --pheno ${dirI}/${i}_dummy_case --make-bed --out ${dirI}/${i}_dummy_case --silent
-  #done
+  echo -e "\nConverting one case set into control set for case-case GWAS and test of flipping and other alignment...\n"
+  for i in temp_20150615_Hewitt_Non-advancedGlaucoma_aligned_1KG #temp_2016_cleaning_QTWIN_controls_aligned_1KG temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG temp_2016_cleaning_SDH_2_aligned_1KG temp_2016_cleaning_AMFS_controls_aligned_1KG temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG temp_2016_cleaning_OAGphase1_controls_aligned_1KG temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG
+  do
+  for j in temp_20150615_Hewitt_Progressa_aligned_1KG
+  do
+    awk '{print $1,$2,1}' ${dirI}/${i}.fam > ${dirI}/${i}_dummy_con
+    plink_1.90 --threads 1 --bfile ${dirI}/${i} --pheno ${dirI}/${i}_dummy_con --make-bed --out ${dirI}/${i}_dummy_con --silent
+    
+    awk '{print $1,$2,2}' ${dirI}/${j}.fam > ${dirI}/${j}_dummy_case
+    plink_1.90 --threads 1 --bfile ${dirI}/${j} --pheno ${dirI}/${j}_dummy_case -make-bed --out ${dirI}/${j}_dummy_case --silent
+  
+    plink_1.90 --threads 1 --bfile ${dirI}/${i}_dummy_con --bmerge ${dirI}/${j}_dummy_case --make-bed --geno 0.03 --hwe 5e-10 midp include-nonctrl --out ${dirI}/${i}_${j}_dummy
+    plink_1.90 --threads 1 --bfile ${dirI}/${i}_${j}_dummy --mind 0.03 --assoc --out ${dirI}/${i}_${j}_dummy_assoc --silent
+   awk 'NR==1 || $9<5e-6' ${dirI}/${i}_${j}_dummy_assoc.assoc | awk '{print $2}' > ${dirI}/SNPs_to_drop_from_case-case_GWAS
+   grep Warning ${dirI}/${i}_${j}_dummy.log | awk '{print $3, $5}' | grep -v observation | sed "s#'##g" | tr " " "\n" >> ${dirI}/SNPs_to_drop_from_case-case_GWAS
+  rm -f ${dirI}/${i}_dummy_con* ${dirI}/${j}_dummy_case* ${dirI}/${i}_${j}_dummy* ${dirI}/${i}_${j}_dummy_assoc*
+  done
+  done
 
   #there are some SNPs that are by designed not aligned (e.g. rs10305752 is missing in 610k dataset, and is an indel, so does not have its alleles fixed where as it is in omni sets) so have a file of SNPs to exclude I made by manually flip/merging. only exclude these for control:control merges
   #wc -l ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt
@@ -2089,6 +2101,7 @@ rm -f temp_2016_cleaning_SDH2.* temp_2016_cleaning_SDH_2.* temp_2016_cleaning_AM
   #for i in temp_2016_cleaning_QTWIN_controls_aligned_1KG #temp_2016_cleaning_SDH_2_aligned_1KG temp_2016_cleaning_AMFS_controls_aligned_1KG temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG temp_2016_cleaning_OAGphase1_controls_aligned_1KG temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG
   #do
    # echo -e "\nComparing ${k} and ${i}\n"
+    
     #plink_1.90 --threads 1 --bfile ${dirI}/${k} --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
     #plink_1.90 --threads 1 --bfile ${dirI}/${k} --flip ${dirI}/${i}_${k}-merge.missnp --make-bed --out ${dirI}/${k}_flip --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
     #plink_1.90 --threads 1 --bfile ${dirI}/${k}_flip --bmerge ${dirI}/${i} --make-bed --out ${dirI}/${i}_${k} --exclude ${dirI}/SNPs_to_drop_when_testing_controls_vs_controls.txt --silent
@@ -2523,9 +2536,9 @@ rm -f temp_2016_cleaning_SDH2.* temp_2016_cleaning_SDH_2.* temp_2016_cleaning_AM
   for i in temp_20150615_Hewitt_Non-advancedGlaucoma_aligned_1KG temp_20150615_Hewitt_Progressa_aligned_1KG  #temp_2016_cleaning_AMFS_cases_aligned_1KG temp_2016_cleaning_AMFS_controls_aligned_1KG temp_2016_cleaning_HEIDELBERG_cases_aligned_1KG temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG temp_2016_cleaning_IBD_controls_aligned_1KG temp_2016_cleaning_OAGphase1_controls_aligned_1KG temp_2016_cleaning_OAGphase2_controls_aligned_1KG temp_2016_cleaning_QMEGA_610k_cases_aligned_1KG temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG temp_2016_cleaning_SDH_2_aligned_1KG temp_2016_cleaning_WAMHS_cases_aligned_1KG
   do
    echo -e  "\nCleaning ${i} to minimal settings - maf 0.001, geno 0.03, mind 0.03, --hwe 5e-10 midp include-nonctrl\n"
-   plink_1.90 --threads 1 --bfile ${dirI}/${i} --geno 0.03 --mind 0.03 --maf 0.001 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${i}_min_clean
+   plink_1.90 --threads 1 --bfile ${dirI}/${i} --geno 0.03 --mind 0.03 --maf 0.001 --hwe 5e-10 midp include-nonctrl --make-bed --out ${dirI}/${i}_min_clean --exclude ${dirI}/SNPs_to_drop_from_case-case_GWAS
   done #minimal cleaning
-
+  
     #AMFS_cases: 802442 variants loaded. 548 people (205 males, 343 females) loaded. 0 people removed due to --mind 35 variants removed due to --hwe. 0 variants removed due to minor allele threshold(s) 2877 variants removed due to missing genotype data (--geno). 799530 variants and 548 people pass filters and QC.
     #AMFS_controls: 802427 variants loaded 30 people (179 males, 251 females) loaded 0 people removed due to missing genotype data  2331 variants removed due to missing genotype data (--geno) --hwe: 27 variants removed  1 variant removed due to minor allele threshold(s) 800068 variants and 430 people pass filters and QC
     #HEI_cases: 218694 variants loaded 1217 people (706 males, 511 females) loaded 355 variants removed due to missing genotype data (--geno) --hwe: 86 variants removed due to Hardy-Weinberg exact test 3760 variants removed due to minor allele threshold(s) 214493 variants and 1217 people pass filters and QC 
@@ -2559,50 +2572,60 @@ rm -f temp_2016_cleaning_SDH2.* temp_2016_cleaning_SDH_2.* temp_2016_cleaning_AM
 #5.0 Recombine the control and case sets
 ##################################################################################
 
-for x in #1
-do
-  echo -e "\nCombining AMFS cases and controls\n"
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_AMFS_cases_aligned_1KG_min_clean --bmerge ${dirI}/temp_2016_cleaning_AMFS_controls_aligned_1KG_min_clean --make-bed --out ${dirI}/temp_2016_cleaning_AMFS_aligned_1KG 
-    #Total genotyping rate is 0.996949. 801414 variants and 978 people pass filters and QC
-  echo -e "\nCombining QMEGA_610k cases and controls\n"
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_QMEGA_610k_cases_aligned_1KG_min_clean --bmerge ${dirI}/temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG_min_clean --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_610k_aligned_1KG
-    #Total genotyping rate is 0.92944. 550293 variants and 4878 people pass filters and QC
-  echo -e "\nCombining QMEGA_omni cases and SDH controls\n"
+#for x in #1
+#do
+  echo -e "\nCombining cases and controls\n"
+  plink_1.90 --threads 1 --bfile ${dirI}/temp_20150615_Hewitt_Non-advancedGlaucoma_aligned_1KG_min_clean --bmerge ${dirI}/temp_20150615_Hewitt_Progressa_aligned_1KG_min_clean --make-bed --out ${dirI}/temp_Non-advancedGlaucoma_Progressa_aligned_1KG --geno 0.03 --maf 0.001 --hwe 5e-10 midp include-nonctrl
+  awk '{print $1, $2, 2}' ${dirI}/temp_Non-advancedGlaucoma_Progressa_aligned_1KG.fam > ${dirI}/temp_Non-advancedGlaucoma_Progressa_aligned_1KG.pheno
+  plink_1.90 --threads 1 --bfile  ${dirI}/temp_Non-advancedGlaucoma_Progressa_aligned_1KG --pheno ${dirI}/temp_Non-advancedGlaucoma_Progressa_aligned_1KG.pheno --make-bed --out ${dirI}/temp_Non-advancedGlaucoma_Progressa_aligned_1KG_min_clean
+  echo -e "\nCombining cases and ENDO controls\n"
+  awk '{print $1, $2, 1}' ${dirI}/temp_ENDO_Release8_Observed_CoreExome_aligned_1KG_min_clean.fam > ${dirI}/temp_ENDO_Release8_Observed_CoreExome_aligned_1KG_min_clean.pheno
+  plink_1.90 --threads 1 --bfile ${dirI}/temp_ENDO_Release8_Observed_CoreExome_aligned_1KG_min_clean --pheno ${dirI}/temp_ENDO_Release8_Observed_CoreExome_aligned_1KG_min_clean.pheno --make-bed --out ${dirI}/temp_ENDO_Release8_Observed_CoreExome_aligned_1KG_min_clean2
+ plink_1.90 --threads 1 --bfile ${dirI}/temp_Non-advancedGlaucoma_Progressa_aligned_1KG_min_clean --bmerge ${dirI}/temp_ENDO_Release8_Observed_CoreExome_aligned_1KG_min_clean2 --make-bed --out ${dirI}/temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean --geno 0.03 --maf 0.001 --hwe 0.0001 
+    
+#echo -e "\nCombining QMEGA_omni cases and SDH controls\n"
   #A couple of run throughs identified various SNPs on the arrays, but not in 1KG ref files, with different positions between SDH and QMEGA_omni; a number had been zeroed out. Where they could be matched by position/freq to real SNPs in dbSNP added and initial step at the start of the script to remap them otherwise exclude them. Some requiring flipping still (as not in 1kG ref files I have can't align them to a set strand.
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean --bmerge ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean  --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean --bmerge ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean  --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG
     #963 with 3+ alleles
-  echo ""
+  #echo ""
   #check for ambigious (only would happen if something borked above - should have been removed if I couldn't align to 1kG )
-  awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG-merge.missnp ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean.bim | awk '($5=="A" && $6=="T") || ($5=="T" && $6=="A") || ($5=="C" && $6=="G") || ($5=="G" && $6=="C")' | wc -l
-   #0
+  awk 'NR==FNR {a[$1];next} $2 in a' ${dirI}/temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean-merge.missnp ${dirI}/temp_ENDO_Release8_Observed_CoreExome_aligned_1KG_min_clean2.bim | awk '($5=="A" && $6=="T") || ($5=="T" && $6=="A") || ($5=="C" && $6=="G") || ($5=="G" && $6=="C")' | wc -l
+   #0 so non are ambi SNPs
+  
   echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean --flip ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG-merge.missnp --make-bed --out ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip
-    #Flip 963 SNPs flipped
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean --bmerge ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip  --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG
-   #359 same position warning - agin will be SNPs where not in 1KG, or the 1KG is not and rsID
-     #Total genotyping rate is 0.960236. 848806 variants and 1264 people pass filters and QC.
-  echo ""
-  grep Warning ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG.log |  grep "have the same position" | cut -d" " -f3,5 | sed "s/'//g" > ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos; wc -l ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos
-    #359
-  echo -e "\nFollowing is head of the files of SNPs that have overlapping positions but different names"
-  awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip.bim) ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos) <( sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean.bim) > ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_1; head ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_1
+  grep 'Multiple positions\|Multiple chromosomes' ${dirI}/temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean.log | awk '{print $7}' | sed "s#'##g" | sed 's/\.//g' > ${dirI}/SNPs_to_drop_from_case_control_merge_same_position; wc -l ${dirI}/SNPs_to_drop_from_case_control_merge_same_position
+  #I drop them since they are not many otherwise, if many SNPs, it would be better to go through the below steps to fix the position issue
+  plink_1.90 --threads 1 --bfile ${dirI}/temp_ENDO_Release8_Observed_CoreExome_aligned_1KG_min_clean2 --flip ${dirI}/temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean-merge.missnp --make-bed --out ${dirI}/temp_ENDO_Release8_Observed_CoreExome_aligned_1KG_min_clean2_flip --exclude ${dirI}/SNPs_to_drop_from_case_control_merge_same_position
+  #I drop them since they are not many otherwise, if many SNPs, it would be better to go through the below steps to fix the position issue. 
+ 
+ echo ""
+  plink_1.90 --threads 1 --bfile ${dirI}/temp_Non-advancedGlaucoma_Progressa_aligned_1KG_min_clean --bmerge ${dirI}/temp_ENDO_Release8_Observed_CoreExome_aligned_1KG_min_clean2_flip --make-bed --out ${dirI}/temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean --geno 0.03 --maf 0.001 --hwe 0.0001 --exclude ${dirI}/SNPs_to_drop_from_case_control_merge_same_position
+  
+  grep "Warning: Multiple positions" ${dirI}/temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean.log | awk '{print $7}' | sed "s#'##g"  | sed 's/\.//g' >> ${dirI}/SNPs_to_drop_from_case_control_merge_same_position
+  grep "Warning: Variants" ${dirI}/temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean.log | awk '{print $3, $5}' | sed "s#'##g" | tr " " "\n" >> ${dirI}/SNPs_to_drop_from_case_control_merge_same_position
+  
+  plink_1.90 --threads 1 --bfile ${dirI}/temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean --exclude ${dirI}/SNPs_to_drop_from_case_control_merge_same_position --make-bed --out ${dirI}/temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2
+  #echo ""
+  #grep Warning ${dirI}/temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean.log |  grep "have the same position" | cut -d" " -f3,5 | sed "s/'//g" > ${dirI}/temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean_same_pos; wc -l ${dirI}/temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean_same_pos
+   
+  #echo -e "\nFollowing is head of the files of SNPs that have overlapping positions but different names"
+  #awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip.bim) ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos) <( sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean.bim) > ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_1; head ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_1
     #before 13/07/2016, one of these was ambigious, and looked to be on the wrong strand for one of them. But they should have only been retained if they were alignable to 1kg. : kgp1064009 SNP1-65860417 1 kgp1064009 0 66087829 T A 1 SNP1-65860417 0 66087829 A T
-  echo -e "\nNone should be ambigious; checking..."
-  awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip.bim) ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos) <( sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean.bim) | awk '($7=="A" && $8=="T") || ($7=="T" && $8=="A") || ($7=="G" && $8=="C") || ($7=="C" && $8=="G")' | wc -l
+  #echo -e "\nNone should be ambigious; checking..."
+  #awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip.bim) ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos) <( sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean.bim) | awk '($7=="A" && $8=="T") || ($7=="T" && $8=="A") || ($7=="G" && $8=="C") || ($7=="C" && $8=="G")' | wc -l
     #0 now I have fixed the alignment process
-  echo ""
+  #echo ""
   #above I found that you can wrongly combine SNPs by assuming the alleles make sense - so should really check here with freq
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean --freq --out ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean --silent
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean --freq --out ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean --freq --out ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean --freq --out ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean --silent
 
-  awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/ \+/ /g' ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean.frq | sed 's/^ //g') ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_1 > ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_2; wc -l ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_2
+  #awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/ \+/ /g' ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean.frq | sed 's/^ //g') ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_1 > ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_2; wc -l ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_2
     #359
-  echo ""
-  awk 'NR==FNR {a[$2]=$0;next} $2 in a {print $0,a[$2]}' <(sed 's/ \+/ /g' ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean.frq | sed 's/^ //g') ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_2 > ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3; wc -l ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3
+  #echo ""
+  #awk 'NR==FNR {a[$2]=$0;next} $2 in a {print $0,a[$2]}' <(sed 's/ \+/ /g' ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean.frq | sed 's/^ //g') ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_2 > ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3; wc -l ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3
     #359 
-  echo -e "\nDisplaying SNPs with a more than 5% diff between cases and controls but the same positions"
-  awk '($19-$25) < (-0.05) || ($19-$25) > 0.05' ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3
+  #echo -e "\nDisplaying SNPs with a more than 5% diff between cases and controls but the same positions"
+  #awk '($19-$25) < (-0.05) || ($19-$25) > 0.05' ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3
     #kgp3126359 SNP4-9846076 4 kgp3126359 0 10236978 C A 4 SNP4-9846076 0 10236978 G T 4 kgp3126359 C A 0.3849 1138 4 SNP4-9846076 G T 0.4394 1386
     #kgp9471170 SNP4-9860645 4 kgp9471170 0 10251547 A C 4 SNP4-9860645 0 10251547 T G 4 kgp9471170 A C 0.414 1140 4 SNP4-9860645 T G 0.469 1388
     #kgp12176916 SNP4-10021586 4 kgp12176916 0 10412488 G A 4 SNP4-10021586 0 10412488 C T 4 kgp12176916 G A 0.4009 1140 4 SNP4-10021586 C T 0.4517 1388
@@ -2612,73 +2635,73 @@ do
     #are any in 1kG? E.g. is it just that 1kg has an equaly ambigious name? 
     ##zcat ALL_1000G_phase1integrated_v3_ALL_chr_legends_with_chromosome.txt.gz | awk '($1==4 && $3==10236978) || ($1==4 && $3==10251547) || ($1==4 && $3==10412488) || ($1==20 && $3==33079392) || ($1==20 && $3==33736071)'
       #Nope
-  echo ""
+  #echo ""
   #as no ambigious can now use this to work out which ones to flip - do a quick test of $7!=$13; as long as not very close to 0.5 MAF should be testing the same allele. Manually checked a bunch and that looks to be the case. Nope there is one - SNP6-135367351/kgp16958124 with MAF _ 0.48 so have to check both
-  awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip.bim) ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos) <( sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean.bim) | awk '!(($7==$13 && $8==$14) || ($7==$14 && $8==$13)) {print $1}' >> ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG-merge.missnp; wc -l ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG-merge.missnp
+  #awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip.bim) ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos) <( sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean.bim) | awk '!(($7==$13 && $8==$14) || ($7==$14 && $8==$13)) {print $1}' >> ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG-merge.missnp; wc -l ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG-merge.missnp
     #1135
-  echo -e "\nNow flipping those SNPs with overlapping positions, are non-ambigious to the same strand\n"
+  #echo -e "\nNow flipping those SNPs with overlapping positions, are non-ambigious to the same strand\n"
   #redo the flip
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean --flip ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG-merge.missnp --make-bed --out  ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean --flip ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG-merge.missnp --make-bed --out  ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip
     #--1139 flipped
   #now update the names (may as well match the melanoma set)
-  echo ""
+  #echo ""
   #Before updating names make sure alleles are the same, or alleles swapped A1 and A2 but MAF > 0.5 
-  awk '!(($7==$13 && $8==$14) || ($7==$14 && $8==$13 && $19>=0.45) || ($7=="G" && $8=="T" && $13=="C" && $14=="A") || ($7=="A" && $8=="C" && $13=="T" && $14=="G") || ($7=="A" && $8=="G" && $13=="T" && $14=="C") || ($7=="T" && $8=="C" && $13=="A" && $14=="G") || ($7=="G" && $8=="A" && $13=="C" && $14=="T") || ($7=="C" && $8=="A" && $13=="G" && $14=="T") || ($7=="C" && $8=="T" && $13=="G" && $14=="A"))' ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3
+  #awk '!(($7==$13 && $8==$14) || ($7==$14 && $8==$13 && $19>=0.45) || ($7=="G" && $8=="T" && $13=="C" && $14=="A") || ($7=="A" && $8=="C" && $13=="T" && $14=="G") || ($7=="A" && $8=="G" && $13=="T" && $14=="C") || ($7=="T" && $8=="C" && $13=="A" && $14=="G") || ($7=="G" && $8=="A" && $13=="C" && $14=="T") || ($7=="C" && $8=="A" && $13=="G" && $14=="T") || ($7=="C" && $8=="T" && $13=="G" && $14=="A"))' ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3
     #kgp1718593 SNP6-135365744 6 kgp1718593 0 135324051 G A 6 SNP6-135365744 0 135324051 T C 6 kgp1718593 G A 0.4842 1136 6 SNP6-135365744 T C 0.4942 1386 << strand flip and MAF close to 0.5 so swapped A1 and A2
     #kgp2808278 SNP20-32070151 20 kgp2808278 0 32606490 A C 20 SNP20-32070151 0 32606490 G T 20 kgp2808278 A C 0.4702 1140 20 SNP20-32070151 G T 0.4971 1386 << strand flip and MAF  close to 0.5 so swapped A1 and A2   
     #okay, so happy to rename
-  awk '{print $1,$2}' ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3 >  ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3_update
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip --update-name ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3_update --make-bed --out ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip_2
+  #awk '{print $1,$2}' ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3 >  ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3_update
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip --update-name ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3_update --make-bed --out ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip_2
      #--update-name: 359 values updated.
-  echo "" 
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean --bmerge ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip_2 --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_omni_SDH_aligned_1KG
+  #echo "" 
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean --bmerge ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip_2 --make-bed --out ${dirI}/temp_2016_cleaning_QMEGA_omni_SDH_aligned_1KG
     #Total genotyping rate is 0.960647.  848436 variants and 1264 people pass filters and QC.
  
   #interimn clean
-  rm -f ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3 ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_2 ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_1 ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean.frq ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean.frq ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3_update ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip*.* ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG-merge.missnp 
+  #rm -f ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3 ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_2 ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_1 ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean.frq ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean.frq ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos_3_update ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean_flip*.* ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG-merge.missnp 
 
   #combining the HEI sets
-  echo -e "\nCombining the HEI sets\n"
+  #echo -e "\nCombining the HEI sets\n"
 
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_HEIDELBERG_cases_aligned_1KG_min_clean --bmerge ${dirI}/temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG_min_clean --make-bed --out ${dirI}/temp_2016_cleaning_HEIDELBERG_aligned_1KG
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_HEIDELBERG_cases_aligned_1KG_min_clean --bmerge ${dirI}/temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG_min_clean --make-bed --out ${dirI}/temp_2016_cleaning_HEIDELBERG_aligned_1KG
     #no flip warnings, not miss positions warning. Suspiciously easy... Total genotyping rate is 0.989428. 217287 variants and 2437 people pass filters and QC.
 
-  echo -e "\nCombining the control sets for WAMHS\n"
+  #echo -e "\nCombining the control sets for WAMHS\n"
 
    #originally getting 12 flips but they were just errors in SNP remapping, fixed now
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_OAGphase1_controls_aligned_1KG_min_clean --bmerge ${dirI}/temp_2016_cleaning_OAGphase2_controls_aligned_1KG_min_clean --make-bed --out ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_OAGphase1_controls_aligned_1KG_min_clean --bmerge ${dirI}/temp_2016_cleaning_OAGphase2_controls_aligned_1KG_min_clean --make-bed --out ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG
     #Total genotyping rate is 0.858391. 873861 variants and 1292 people pass filters and QC.
-  echo ""
+  #echo ""
     #combine in the IBD set now. Was getting ~76 mutliple position warnings; matching with dbSNP indicates IBD positions correct, intergrated into initial remap step. 4 had different chromosomes and diff bp, checking dbSNP confirms in hapmap were on diff chromosomes, now on the correct chromosome in IBD; freq suggests they are correct.
       #8 rs10106770 76.01 65568328 G A 0.3006 1284 2 rs10106770 0 235832763 C T 0.3069 1854 <<no freq in dbSNP to confirm, but match each other
       #3 rs12496398 216.149 194616354 G A 0.125 1256 4 rs12496398 0 115156497 C T 0.1305 1854 <<no freq in dbSNP to confirm, but match each other
       #5 rs2569201 152.875 149260811 G A 0.06975 1276 8 rs2569201 0 109657233 C T 0.08091 1854 << match each other and dbSNP freq
       #1 rs12043679 145.981 152231425 C A 0.1677 1282 13 rs12043679 0 66066597 C A 0.1753 1854 <<quad allelic in 1kg
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG --bmerge ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean --make-bed --out ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG --bmerge ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean --make-bed --out ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG
     # 725 variants with 3+ alleles present
-  echo ""
+  #echo ""
     #IBD has been correct in terms of position so flip OAG
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG --flip ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG-merge.missnp --make-bed --out ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG --flip ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG-merge.missnp --make-bed --out ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip
       # 725 variants flipped
     #Was getting more same position warnings - added SNPs that are impossible to handle (tri or quad allelic SNPs where two exm arrays assay for each combintation) to fix_exclude
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip --bmerge ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean --make-bed --out ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip --bmerge ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean --make-bed --out ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG
     #447 same position warning
   #for some reason I don't understand IBD is the second field in the same position warning, except for one pairing - exm1574697 VG21S23270 - so reverse that if present
-  echo -e "\nFor an unknown reason PLINK is reversing the log reporting (file 2 is 2nd) in the overlapping SNP pair exm1574697 VG21S23270 so fixing manually\n"
-  grep Warning ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG.log |  grep "have the same position" | cut -d" " -f3,5 | sed "s/'//g" | sed 's/exm1574697 VG21S23270/VG21S23270 exm1574697/g' > ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos; wc -l ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos
+  #echo -e "\nFor an unknown reason PLINK is reversing the log reporting (file 2 is 2nd) in the overlapping SNP pair exm1574697 VG21S23270 so fixing manually\n"
+  #grep Warning ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG.log |  grep "have the same position" | cut -d" " -f3,5 | sed "s/'//g" | sed 's/exm1574697 VG21S23270/VG21S23270 exm1574697/g' > ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos; wc -l ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos
     #447
-  echo -e "\nFollowing is head of the files of SNPs that have overlapping positions but different names:"
-  awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip.bim) ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos) <( sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean.bim) > ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_1; head -4 ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_1
+  #echo -e "\nFollowing is head of the files of SNPs that have overlapping positions but different names:"
+  #awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip.bim) ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos) <( sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean.bim) > ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_1; head -4 ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_1
    #rs1052571 chr1:15850613 1 rs1052571 0 15850613 G A 1 chr1:15850613 0 15850613 G A
    #rs17887074 chr1:22964176 1 rs17887074 0 22964176 A G 1 chr1:22964176 0 22964176 A G
    #rs41306580 chr1:23847534 1 rs41306580 0 23847534 A C 1 chr1:23847534 0 23847534 A C
    #rs41263977 chr1:32193185 1 rs41263977 0 32193185 A G 1 chr1:32193185 0 32193185 A G
 
-  echo -e "\nNone should be ambigious; checking..."
+  #echo -e "\nNone should be ambigious; checking..."
    #was getting three more ambigious SNPs with name mismatch, but three could be fixed by flipping the exm SNP in the IBD set, which meant it could be paired with its omni express non exm counterpart (e.g. exm-rs9261434 and rs9261434) and thus removed
-  awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip.bim) ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos) <( sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean.bim) | awk '($7=="A" && $8=="T") || ($7=="T" && $8=="A") || ($7=="G" && $8=="C") || ($7=="C" && $8=="G")' | wc -l
+  #awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip.bim) ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos) <( sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean.bim) | awk '($7=="A" && $8=="T") || ($7=="T" && $8=="A") || ($7=="G" && $8=="C") || ($7=="C" && $8=="G")' | wc -l
     #4..... I bet the name in 1000 genomes is chr......
     #rs41273533 chr1:158655129 1 rs41273533 0 158655129 G C 1 chr1:158655129 0 158655129 G C
     #rs35400920 chr4:36163089 4 rs35400920 0 36163089 G C 4 chr4:36163089 0 36163089 G C
@@ -2693,94 +2716,94 @@ do
     #15 chr15:34032188 34032188 C G 0.0000 0.0000 0.0000 0.0013 0.0000 0.0000 0.0000 0.0013
  
   #before go further check the freq but I wonder if my selecting name function is not specific enough but I wonder if my selecting name function is not specific enough..
-  echo ""
+  #echo ""
   #above I found that you can wrongly combine SNPs by assuming the alleles make sense - so should really check here with freq
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip --freq --out ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip --silent
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean --freq --out ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip --freq --out ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean --freq --out ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean --silent
 
-  awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/ \+/ /g' ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip.frq | sed 's/^ //g') ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_1 > ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_2; wc -l ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_2
+  #awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/ \+/ /g' ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip.frq | sed 's/^ //g') ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_1 > ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_2; wc -l ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_2
    #447; was n-1 until I manually reversed the pairing of exm1574697 VG21S23270   
-  echo ""
-  awk 'NR==FNR {a[$2]=$0;next} $2 in a {print $0,a[$2]}' <(sed 's/ \+/ /g' ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean.frq | sed 's/^ //g') ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_2 > ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3; wc -l ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3
+  #echo ""
+  #awk 'NR==FNR {a[$2]=$0;next} $2 in a {print $0,a[$2]}' <(sed 's/ \+/ /g' ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean.frq | sed 's/^ //g') ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_2 > ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3; wc -l ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3
     #295
-  echo -e "\nDisplaying SNPs with a more than 5% diff between cases and controls but the same positions"
+  #echo -e "\nDisplaying SNPs with a more than 5% diff between cases and controls but the same positions"
   #need to check the alleles make sense too - not just for flips but for literally different SNP
-  awk '($19-$25) < (-0.05) || ($19-$25) > 0.05' ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3
+  #awk '($19-$25) < (-0.05) || ($19-$25) > 0.05' ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3
     #rs1403543 exm-rs1403543 23 rs1403543 0 115302192 G A 23 exm-rs1403543 0 115302192 A G 23 rs1403543 G A 0.4263 990 23 exm-rs1403543 A G 0.4993 1434
       #that is a reasonably big freq diff - still the exm assays are for the same SNP (checked dbSNP) so update. Note that allele order order has swapped - so it is actually about a 9% diff, not 7%
-  echo ""
-  awk '$7!=$13' ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3 | wc -l 
+  #echo ""
+  #awk '$7!=$13' ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3 | wc -l 
     #35
-  echo -e "\nThe following SNP is not a simple flip; check it is only dislaying rs1403543, which has had the minor/major swap"
+  #echo -e "\nThe following SNP is not a simple flip; check it is only dislaying rs1403543, which has had the minor/major swap"
     #look for ones that don't make sense before renaming
-  awk '!(($7==$13 && $8==$14) || ($7==$14 && $8==$13 && $19>=0.45) || ($7=="G" && $8=="T" && $13=="C" && $14=="A") || ($7=="A" && $8=="C" && $13=="T" && $14=="G") || ($7=="A" && $8=="G" && $13=="T" && $14=="C") || ($7=="T" && $8=="C" && $13=="A" && $14=="G") || ($7=="G" && $8=="A" && $13=="C" && $14=="T") || ($7=="C" && $8=="A" && $13=="G" && $14=="T") || ($7=="C" && $8=="T" && $13=="G" && $14=="A"))' ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3
+  #awk '!(($7==$13 && $8==$14) || ($7==$14 && $8==$13 && $19>=0.45) || ($7=="G" && $8=="T" && $13=="C" && $14=="A") || ($7=="A" && $8=="C" && $13=="T" && $14=="G") || ($7=="A" && $8=="G" && $13=="T" && $14=="C") || ($7=="T" && $8=="C" && $13=="A" && $14=="G") || ($7=="G" && $8=="A" && $13=="C" && $14=="T") || ($7=="C" && $8=="A" && $13=="G" && $14=="T") || ($7=="C" && $8=="T" && $13=="G" && $14=="A"))' ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3
    #rs1403543 exm-rs1403543 23 rs1403543 0 115302192 G A 23 exm-rs1403543 0 115302192 A G 23 rs1403543 G A 0.4263 990 23 exm-rs1403543 A G 0.4993 1434 <<same as above, allele order swapped as minor allele swapped
    #1434 
-  echo ""
+  #echo ""
    #looks like the OAG content is preferable in terms of names 
-  awk '{print $2,$1}' ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3 > ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3_update
-  cut -d" " -f1 ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3_update | sort | uniq -d
+  #awk '{print $2,$1}' ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3 > ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3_update
+  #cut -d" " -f1 ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3_update | sort | uniq -d
     #0
-  cut -d" " -f2 ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3_update | sort | uniq -d
+  #cut -d" " -f2 ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3_update | sort | uniq -d
     #0
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean --update-name ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3_update --make-bed --out ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean_2
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean --update-name ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_3_update --make-bed --out ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean_2
    #--update-name: 447 values updated.
-  echo ""
+  #echo ""
   #look for any new flips
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG --bmerge ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean_2 --make-bed --out ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG --bmerge ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean_2 --make-bed --out ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG
    #766 - so + ~24 after renaming
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG --flip ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG-merge.missnp --make-bed --out ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG --flip ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG-merge.missnp --make-bed --out ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip
       # 766  variants flipped
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip --bmerge ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean_2 --make-bed --out ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip --bmerge ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean_2 --make-bed --out ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG
     #Total genotyping rate is 0.788449. 923249 variants and 2219 people pass filters and QC.
   #clean up
-  rm -f ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG-merge.missnp 
+  #rm -f ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG-merge.missnp 
 
-  echo -e "\nNow merging WAMHS data into combined control data"
+  #echo -e "\nNow merging WAMHS data into combined control data"
   #now merge in WAMHS. Was getting 4 multiple positin and 10 multiple chromsome warnings. Fixed in main script - 1 SNP was weird (no dbSNP info) so dropped, 3 had wrong OAG positions by 1bp, the 10 chr positions were SNPs assigned to X_PAR or X_nonPAR wrongly.
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean --bmerge ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG --make-bed --out ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean --bmerge ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG --make-bed --out ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG
     #Error: 2840 variants with 3+ alleles present.
-  echo ""
+  #echo ""
   #try flipping
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean --flip ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG-merge.missnp --make-bed --out ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean --flip ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG-merge.missnp --make-bed --out ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip
     #2840 flipped
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip --bmerge ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG --make-bed --out ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip --bmerge ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG --make-bed --out ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG
    #no more flip errors anymore but 432 (down from ~7400 before I updated handling overlapping SNPS) same position warning. Many look to be exm overlaps within WAMHS data not picked up earlier due to the exm data being flipped
    #Warning: Variants 'rs1052571' and 'chr1:15850613' have the same position.
    #Warning: Variants 'rs41306580' and 'chr1:23847534' have the same position.
    #Warning: Variants 'rs41263977' and 'chr1:32193185' have the same position.
    #432 more same-position warnings: see log file.
    #most of these appear to be duplicated in WAMHs, but not fixed as flipped in WAMHS.....
-  echo ""
-   grep "Warning" ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG.log | grep "have the same position" | wc -l
-  echo ""
+  #echo ""
+   #grep "Warning" ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG.log | grep "have the same position" | wc -l
+  #echo ""
      #435
-   grep "Warning" ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG.log | grep "have the same position" | cut -d" " -f3,5 | sed "s/'//g" | sed 's/\.//g' | sed 's/exm686274 exm2258773/exm2258773 exm686274/g' | sed 's/exm2251671 exm1134438/exm1134438 exm2251671/g' | sed 's/exm1574697 VG21S23270/VG21S23270 exm1574697/g' | sed 's/rs2032597 exm-rs2032597/exm-rs2032597 rs2032597/g' | sed 's/rs34442126 exm-rs34442126/exm-rs34442126 rs34442126/g' |  sed 's/rs35474563 exm-rs35474563/exm-rs35474563 rs35474563/g' | sed 's/rs700449 exm2273221/exm2273221 rs700449/g'  > ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_1; wc -l ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_1
+   #grep "Warning" ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG.log | grep "have the same position" | cut -d" " -f3,5 | sed "s/'//g" | sed 's/\.//g' | sed 's/exm686274 exm2258773/exm2258773 exm686274/g' | sed 's/exm2251671 exm1134438/exm1134438 exm2251671/g' | sed 's/exm1574697 VG21S23270/VG21S23270 exm1574697/g' | sed 's/rs2032597 exm-rs2032597/exm-rs2032597 rs2032597/g' | sed 's/rs34442126 exm-rs34442126/exm-rs34442126 rs34442126/g' |  sed 's/rs35474563 exm-rs35474563/exm-rs35474563 rs35474563/g' | sed 's/rs700449 exm2273221/exm2273221 rs700449/g'  > ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_1; wc -l ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_1
      #435. How many both from WAMHS?
-  echo -e "\nChecking for overlapping SNPs that are both in WAMHS; should be 0:"
-   awk 'NR==FNR {a[$2];next} $1 in a && $2 in a' ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean.bim ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_1 | wc -l
-  echo -e "\nChecking for overlapping SNPs that are both in OAG + IBD; should be 0:"
+  #echo -e "\nChecking for overlapping SNPs that are both in WAMHS; should be 0:"
+   #awk 'NR==FNR {a[$2];next} $1 in a && $2 in a' ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean.bim ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_1 | wc -l
+  #echo -e "\nChecking for overlapping SNPs that are both in OAG + IBD; should be 0:"
     #0 (down from 7298 before I fixed handling overlapping SNPs)
-   awk 'NR==FNR {a[$2];next} $1 in a && $2 in a' ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG.bim ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_1 | wc -l
-  echo ""
+   #awk 'NR==FNR {a[$2];next} $1 in a && $2 in a' ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG.bim ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_1 | wc -l
+  #echo ""
    #0 good; 
    #so lets combine them and make sure they are the right SNPs. We again have 7 SNPs were for some reason OAG+IBD is reported second, and WAMHS first, so manually swap
-   awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG.bim) ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_1) <( sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip.bim) > ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_2; wc -l ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_2
+   #awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG.bim) ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_1) <( sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip.bim) > ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_2; wc -l ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_2
     #435 (was 428 before fixing the order of 7 of them)
-  echo ""
+  #echo ""
   #doesn't really matter whose names get updated - which one has more rs rather than exm-rs? Seems neater
-  grep -c ^rs ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_2
+  #grep -c ^rs ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_2
      #428
-  echo ""
-  grep -c -w " rs" ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_2
+  #echo ""
+  #grep -c -w " rs" ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_2
      #0
-  echo ""
-  grep -v ^rs ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_2
-  echo ""
+  #echo ""
+  #grep -v ^rs ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_2
+  #echo ""
     #exm2258773 exm686274 8 exm2258773 0 19809375 C A 8 exm686274 0 19809375 C A
     #exm1134438 exm2251671 14 exm1134438 0 105622160 A G 14 exm2251671 0 105622160 A G
     #VG21S23270 exm1574697 21 VG21S23270 63.0669 44483184 G A 21 exm1574697 0 44483184 G A
@@ -2789,102 +2812,102 @@ do
     #exm-rs35474563 rs35474563 24 exm-rs35474563 0 22917995 T C 24 rs35474563 0 22917995 A G
     #exm2273221 rs700449 25 exm2273221 0 155009856 T C 25 rs700449 0 155009856 A G
     #those are mostly the ones I had to manually fix - does it print rs preferentially in the first col?
-  awk '{print $2,$1}' ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_2 > ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_2_update
+  #awk '{print $2,$1}' ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_2 > ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_2_update
   #update WAMHS
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip --update-name ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_2_update --make-bed --out ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip_2
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip --update-name ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_2_update --make-bed --out ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip_2
      #435 names updated
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip_2 --bmerge ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG --make-bed --out ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip_2 --bmerge ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG --make-bed --out ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG
      #Error: 193 variants with 3+ alleles present.
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip_2 --flip ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG-merge.missnp --make-bed --out ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip_3
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip_2 --flip ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG-merge.missnp --make-bed --out ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip_3
     #--193 flipped
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip_3 --bmerge ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG --make-bed --out ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip_3 --bmerge ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG --make-bed --out ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG
     #Total genotyping rate is 0.765493. 929113 variants and 3492 people pass filters and QC.
 
   #clean up
-  rm -f ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip*.* ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG-merge.missnp ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_* ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip.* ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean_* ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_* 
+  #rm -f ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean_flip*.* ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG-merge.missnp ${dirI}/temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_same_pos_* ${dirI}/temp_2016_cleaning_OAG_controls_aligned_1KG_flip.* ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean_* ${dirI}/temp_2016_cleaning_OAG_IBD_controls_aligned_1KG_same_pos_* 
 
-  echo -e "\nCombining EPIGENE and QTWIN\n"
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean --bmerge ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean --make-bed --out ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG
+  #echo -e "\nCombining EPIGENE and QTWIN\n"
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean --bmerge ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean --make-bed --out ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG
     #No flips, though previous merged by SG. 30 same position warnings
-  echo ""
+  #echo ""
     #7 presented in reverse order, correct  
-  grep "Warning" ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG.log | grep "have the same position" | cut -d" " -f3,5 | sed "s/'//g" | sed 's/\.//g' | sed 's/rs178715 exm2273099/exm2273099 rs178715/g' | sed 's/rs6525433 exm1644651/exm1644651 rs6525433/g' | sed 's/rs6618889 exm2264764/exm2264764 rs6618889/g' | sed 's/rs7890941 exm2273180/exm2273180 rs7890941/g' |  sed 's/rs2843594 exm2262922/exm2262922 rs2843594/g' | sed 's/rs7885911 exm2273292/exm2273292 rs7885911/g' | sed 's/rs5911653 exm2268622/exm2268622 rs5911653/g' | sed 's/rs4289953 exm1656466/exm1656466 rs4289953/g' | sed 's/rs2761608 exm2273213/exm2273213 rs2761608/g' > ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos; wc -l ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos
+  #grep "Warning" ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG.log | grep "have the same position" | cut -d" " -f3,5 | sed "s/'//g" | sed 's/\.//g' | sed 's/rs178715 exm2273099/exm2273099 rs178715/g' | sed 's/rs6525433 exm1644651/exm1644651 rs6525433/g' | sed 's/rs6618889 exm2264764/exm2264764 rs6618889/g' | sed 's/rs7890941 exm2273180/exm2273180 rs7890941/g' |  sed 's/rs2843594 exm2262922/exm2262922 rs2843594/g' | sed 's/rs7885911 exm2273292/exm2273292 rs7885911/g' | sed 's/rs5911653 exm2268622/exm2268622 rs5911653/g' | sed 's/rs4289953 exm1656466/exm1656466 rs4289953/g' | sed 's/rs2761608 exm2273213/exm2273213 rs2761608/g' > ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos; wc -l ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos
     #30
-  echo -e "\nFollowing is head of the files of SNPs that have overlapping positions but different names:"
-  awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean.bim) ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos) <( sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean.bim) > ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_1; head -4 ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_1
+  #echo -e "\nFollowing is head of the files of SNPs that have overlapping positions but different names:"
+  #awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean.bim) ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos) <( sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean.bim) > ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_1; head -4 ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_1
     #rs1974522 exm1626530 23 rs1974522 0 3238733 G A 23 exm1626530 0 3238733 G A
     #rs7885458 exm-rs7885458 23 rs7885458 0 6220474 C T 23 exm-rs7885458 0 6220474 C T
     #rs12689910 exm1626935 23 rs12689910 0 7023678 A G 23 exm1626935 0 7023678 A G
     #rs6639094 exm2273087 23 rs6639094 0 11889104 T C 23 exm2273087 0 11889104 T C
 
-  echo -e "\nNone should be ambigious; checking..."
-  awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean.bim) ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_1) <( sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean.bim  ) | awk '($7=="A" && $8=="T") || ($7=="T" && $8=="A") || ($7=="G" && $8=="C") || ($7=="C" && $8=="G")' | wc -l
+  #echo -e "\nNone should be ambigious; checking..."
+  #awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean.bim) ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_1) <( sed 's/\t/ /g' ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean.bim  ) | awk '($7=="A" && $8=="T") || ($7=="T" && $8=="A") || ($7=="G" && $8=="C") || ($7=="C" && $8=="G")' | wc -l
     #0
   #check freq to make sure are the same
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean --freq --out ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean --silent
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean --freq --out ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean --freq --out ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean --silent
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean --freq --out ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean --silent
 
-  awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/ \+/ /g' ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean.frq | sed 's/^ //g') ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_1 > ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_2; wc -l ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_2
+  #awk 'NR==FNR {a[$2]=$0;next} $1 in a {print $0,a[$1]}' <(sed 's/ \+/ /g' ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean.frq | sed 's/^ //g') ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_1 > ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_2; wc -l ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_2
   #30
 
    #any internal duplicates - shouldn't be any
-  awk 'NR==FNR {a[$2]} $1 in a && $2 in a' ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean.bim ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_1
+  #awk 'NR==FNR {a[$2]} $1 in a && $2 in a' ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean.bim ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_1
      #0
-  awk 'NR==FNR {a[$2]} $1 in a && $2 in a' ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean.bim ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_1
+  #awk 'NR==FNR {a[$2]} $1 in a && $2 in a' ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean.bim ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_1
      #0
-  echo ""
-  awk 'NR==FNR {a[$2]=$0;next} $2 in a {print $0,a[$2]}' <(sed 's/ \+/ /g' ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean.frq | sed 's/^ //g') ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_2 > ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_3; wc -l ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_3
+  #echo ""
+  #awk 'NR==FNR {a[$2]=$0;next} $2 in a {print $0,a[$2]}' <(sed 's/ \+/ /g' ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean.frq | sed 's/^ //g') ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_2 > ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_3; wc -l ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_3
     #30
-  echo -e "\nDisplaying SNPs with a more than 5% diff between cases and controls but the same positions"
+  #echo -e "\nDisplaying SNPs with a more than 5% diff between cases and controls but the same positions"
   #need to check the alleles make sense too - not just for flips but for literally different SNP
-  awk '($19-$25) < (-0.05) || ($19-$25) > 0.05' ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_3
+  #awk '($19-$25) < (-0.05) || ($19-$25) > 0.05' ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_3
     #None for QTWIN/EPIGENE
-  echo ""
-  awk '$7!=$13' ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_3 | wc -l
+  #echo ""
+  #awk '$7!=$13' ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_3 | wc -l
     #0
     #look for ones that don't make sense before renaming
-  awk '!(($7==$13 && $8==$14) || ($7==$14 && $8==$13 && $19>=0.45) || ($7=="G" && $8=="T" && $13=="C" && $14=="A") || ($7=="A" && $8=="C" && $13=="T" && $14=="G") || ($7=="A" && $8=="G" && $13=="T" && $14=="C") || ($7=="T" && $8=="C" && $13=="A" && $14=="G") || ($7=="G" && $8=="A" && $13=="C" && $14=="T") || ($7=="C" && $8=="A" && $13=="G" && $14=="T") || ($7=="C" && $8=="T" && $13=="G" && $14=="A"))' ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_3
+  #awk '!(($7==$13 && $8==$14) || ($7==$14 && $8==$13 && $19>=0.45) || ($7=="G" && $8=="T" && $13=="C" && $14=="A") || ($7=="A" && $8=="C" && $13=="T" && $14=="G") || ($7=="A" && $8=="G" && $13=="T" && $14=="C") || ($7=="T" && $8=="C" && $13=="A" && $14=="G") || ($7=="G" && $8=="A" && $13=="C" && $14=="T") || ($7=="C" && $8=="A" && $13=="G" && $14=="T") || ($7=="C" && $8=="T" && $13=="G" && $14=="A"))' ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_3
    #none
 
   #mix of rs and exm on one side or the other (due to which had the higher info at random I guess, so do a slightly more nuanced update and rename both
-  awk '{
-   if($2~/^rs/ && !($1~/^rs/))
-    print $1,$2;
-  if(!($2~/^rs/) && $1~/^rs/)
-    print $2,$1;
-  if($2~/^rs/ && $1~/^rs/)
-    print $1,$2;
-  if(!($2~/^rs/) && !($1~/^rs/))
-    print $1,$2;
-  }' ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_3 > ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_update; wc -l ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_update
+  #awk '{
+   #if($2~/^rs/ && !($1~/^rs/))
+   # print $1,$2;
+  #if(!($2~/^rs/) && $1~/^rs/)
+   # print $2,$1;
+  #if($2~/^rs/ && $1~/^rs/)
+   # print $1,$2;
+  #if(!($2~/^rs/) && !($1~/^rs/))
+   # print $1,$2;
+  #}' ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_same_pos_3 > ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_update; wc -l ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_update
 
-  for q in temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean
-  do
-    plink_1.90 --threads 1 --bfile ${dirI}/${q} --update-name ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_update --make-bed --out ${dirI}/${q}_2 --silent
+  #for q in temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean
+  #do
+    #plink_1.90 --threads 1 --bfile ${dirI}/${q} --update-name ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_update --make-bed --out ${dirI}/${q}_2 --silent
       #EPIGENE --update-name: 9 values updated, 21 variant IDs not present. QTWIN --update-name: 21 values updated, 9 variant IDs not present.
-  done
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean_2 --bmerge ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean_2 --make-bed --out ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG
+  #done
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean_2 --bmerge ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean_2 --make-bed --out ${dirI}/temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG
    #no more errors Total genotyping rate is 0.943689 323877 variants and 1765 people pass filters and QC.
  
-  rm -f ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean_2.* ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean_2.*
+  #rm -f ${dirI}/temp_2016_cleaning_EPIGENE_cases_aligned_1KG_min_clean_2.* ${dirI}/temp_2016_cleaning_QTWIN_controls_aligned_1KG_min_clean_2.*
 
   #clean up
   #rm -f ${dirI}/temp_2016_cleaning_QMEGA_610k_cases_aligned_1KG.* ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG.* ${dirI}/temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG.* ${dirI}/temp_2016_cleaning_AMFS_cases_aligned_1KG.* ${dirI}/temp_2016_cleaning_AMFS_controls_aligned_1KG.* ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG.* ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG-merge.missnp ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_update_exclude ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_update_bp ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_flip.* ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_2.* ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_2.* ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_3.* ${dirI}/temp_2016_cleaning_QMEGA_omni_aligned_1KG_same_pos* ${dirI}/fix_remap ${dirI}/fix_exclude ${dirI}/fix_remap_chr ${dirI}/temp_2016_cleaning_OAGphase*_controls_aligned_1KG_min_clean.* ${dirI}/temp_2016_cleaning_WAMHS_cases_aligned_1KG_min_clean.* ${dirI}/temp_2016_cleaning_IBD_controls_aligned_1KG_min_clean.* ${dirI}/temp_2016_cleaning_SDH_2_aligned_1KG_min_clean.* ${dirI}/temp_2016_cleaning_QMEGA_omni_cases_aligned_1KG_min_clean.* ${dirI}/temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG_min_clean.* ${dirI}/temp_2016_cleaning_QMEGA_610k_controls_aligned_1KG_2.* ${dirI}/temp_2016_cleaning_QMEGA_610k_cases_aligned_1KG_min_clean.* ${dirI}/temp_2016_cleaning_HEIDELBERG_controls_aligned_1KG_min_clean.* ${dirI}/temp_2016_cleaning_AMFS_controls_aligned_1KG_min_clean.* ${dirI}/temp_2016_cleaning_HEIDELBERG_cases_aligned_1KG_min_clean.* ${dirI}/temp_2016_cleaning_AMFS_cases_aligned_1KG_min_clean.*
 
-done #merging sets
+#done #merging sets
 
 ##################################################################################
 #6.0 Basic tests of the re-merged data
 ##################################################################################
 #flip scan; loop to turn on/off
 
-for x in #1 
-do
-  for i in temp_2016_cleaning_AMFS_aligned_1KG temp_2016_cleaning_QMEGA_610k_aligned_1KG temp_2016_cleaning_QMEGA_omni_aligned_1KG temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG temp_2016_cleaning_HEIDELBERG_aligned_1KG temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG 
+#for x in #1 
+#do
+  for i in temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2 #temp_2016_cleaning_AMFS_aligned_1KG temp_2016_cleaning_QMEGA_610k_aligned_1KG temp_2016_cleaning_QMEGA_omni_aligned_1KG temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG temp_2016_cleaning_HEIDELBERG_aligned_1KG temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG 
   do
     plink_1.90 --threads 1 --bfile ${dirI}/${i} --flip-scan verbose --out ${dirI}/${i}_flipscan
       #AMFS --flip-scan: 7 variants with at least one negative LD match. Looking at the results for AMFS I am not that concertaned by this. The SNPs in question are rare so different LD patterns for a single person might be driving this (and might be real, or genotyping errors, no way to know). rs7250407/rs10405660 have no POS SNPs (no SNPs with positive LD). A sign of a flipped SNP would be a collection of SNPs each with POS LD (so say POS = 5) and a single SNP in NEG with all of them (see example on plink website). Still try flip scan verbose to get a better feel/
@@ -2899,27 +2922,20 @@ do
 
     #still may as well play it safe and remove these SNPs. That said there are three omni SNPs that are okay, and only flagged due to one SNP - rs326150 - so want to keep rs326153\|rs6883729\|rs326162 (see below for working). WAMHS similar - 4 SNPs are flagged due to rs9818314 which is all over the place; keep them. Likewise rs17003186 impacting 4 others. In all other cases it is a pair of SNPs flagging each other, can't tell which is which so drop both
       #QTWIN/EPIGENE a quick eyeball; there are 73 SNp and at most 5 or 6 would be saved where there seems to be a single bad SNP. Weirdlt there is a combined set where 2 SNPs each disagree with two other SNPs - rs1969818|rs7919863|rs546640 - drop them all. Still in EPIGENE retained the few that looked to be caused only by a single bad SNP. rs57928695 and rs1026992
-    awk 'NR>1 && $9!=0 {print $2}' ${dirI}/${i}_flipscan.flipscan | grep -v "rs326153\|rs6883729\|rs326162\|rs6763046\|rs4473559\|rs9831516\|rs9836305\|rs12006821\|rs4142629\|rs5915311\|rs6521881\|rs6757850\|rs6708255\|rs10193618\|rs8071181\|rs34146848\|rs9896466\|rs16944458" > ${dirI}/${i}_flipscan.flipscan_exclude; wc -l ${dirI}/${i}_flipscan.flipscan_exclude
-     #WAMHS 26 AMFS 7 QMEGA 610k 0 QMEGA_omni 0 HEI 2. QTWIN/EPIGENE 66
+    awk 'NR>1 && $9!=0 {print $2}' ${dirI}/${i}_flipscan.flipscan > ${dirI}/${i}_flipscan.flipscan_exclude; wc -l ${dirI}/${i}_flipscan.flipscan_exclude
     echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${i} --exclude ${dirI}/${i}_flipscan.flipscan_exclude --make-bed --out ${dirI}/temp_${i}
-      #AMFS 801414 variants loaded from .bim file. --exclude: 801407 variants remaining. 802722 variants and 978 people pass filters and QC.
-      #QMEGA_610k - none removed.
-      #QMEGA_omni - none removed.
-      #WAMHS 929113 variants loaded from .bim file. --exclude: 929087 variants remaining.
-      #HEI 217287 variants loaded  --exclude: 217285 variants remaining.
-      #QTWIN/EPIGENE 323877 variants loaded from .bim file. --exclude: 323811 variants remaining.
+    plink_1.90 --threads 1 --bfile ${dirI}/${i} --exclude ${dirI}/${i}_flipscan.flipscan_exclude --make-bed --out ${dirI}/${i}_2
     echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/temp_${i} --make-bed --out ${dirI}/${i}
+    plink_1.90 --threads 1 --bfile ${dirI}/${i}_2 --make-bed --out ${dirI}/${i}
     echo ""
     #double check
     plink_1.90 --threads 1  --bfile ${dirI}/${i} --flip-scan --out ${dirI}/${i}_flipscan
       #AMFS, QMEGA_610k QMEGA_omni WAMHS HEI --flip-scan: 0 variants. EPIGENE 0 now
     echo ""
-    rm -f  ${dirI}/${i}_flipscan.* ${dirI}/temp_${i}.*
+    rm -f  ${dirI}/${i}_flipscan.* ${dirI}/${i}_2.*
   done #flipscan removal
-nk_1.90 --threads 1 --bfile ${dirI}/temp${i}_7 --extract ${dirI}/temp${i}_7_IBD.prune.in --genome --min 0.1 --out ${dirI}/temp${i}_7_IBD 
-done
+#plink_1.90 --threads 1 --bfile ${dirI}/temp${i}_7 --extract ${dirI}/temp${i}_7_IBD.prune.in --genome --min 0.1 --out ${dirI}/temp${i}_7_IBD 
+#done
     ############################################################
     #AMFS
     ############################################################
@@ -3130,9 +3146,9 @@ done
 #6.0 QUICK GWAS for major problems
 ########################################################################
  #run a quick GWAS to look for any weird problems before cleaning properly
-for x in #1
-do
-  for i in #temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG temp_2016_cleaning_AMFS_aligned_1KG temp_2016_cleaning_QMEGA_610k_aligned_1KG temp_2016_cleaning_QMEGA_omni_aligned_1KG temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG temp_2016_cleaning_HEIDELBERG_aligned_1KG
+#for x in #1
+#do
+  for i in temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2 #temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG temp_2016_cleaning_AMFS_aligned_1KG temp_2016_cleaning_QMEGA_610k_aligned_1KG temp_2016_cleaning_QMEGA_omni_aligned_1KG temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG temp_2016_cleaning_HEIDELBERG_aligned_1KG
   do
     echo -e "\nquick GWAS for ${i}\n"
     plink_1.90 --threads 1  --bfile ${dirI}/${i} --assoc --out ${dirI}/${i}
@@ -3140,7 +3156,7 @@ do
     awk 'NR==1 || $9<5e-7' ${dirI}/${i}.assoc
     rm -f ${dirI}/${i}.assoc
   done #loop through sets
-done #loop to turn on/off
+#done #loop to turn on/off
 
   #AMFS 
   # CHR               SNP         BP   A1      F_A      F_U   A2        CHISQ            P           OR 
@@ -3367,14 +3383,14 @@ done #loop to turn on/off
 #3. Clean on missingness (--mind 0.03 --geno 0.03 --maf 0.001 ) then HWE (10-4 in controls, 10-10 in cases). In this case don't do the maf cleaning yet. do that later
 #4 Also filter on extreme het in samples (see the MIA scripts etc; MI suggests >0.05 or < -0.05)
 
-for x in #1
-do
+#for x in #1
+#do
 
-  for i in #temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG temp_2016_cleaning_AMFS_aligned_1KG temp_2016_cleaning_QMEGA_610k_aligned_1KG temp_2016_cleaning_QMEGA_omni_aligned_1KG temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG temp_2016_cleaning_HEIDELBERG_aligned_1KG
-  do
+  #for i in #temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG temp_2016_cleaning_AMFS_aligned_1KG temp_2016_cleaning_QMEGA_610k_aligned_1KG temp_2016_cleaning_QMEGA_omni_aligned_1KG temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG temp_2016_cleaning_HEIDELBERG_aligned_1KG
+  #do
 
     #need to filter any SNPs missing in one array or the other for merged sets
-    plink_1.90 --threads 1 --bfile ${dirI}/${i} --geno 0.2 --make-bed --out ${dirI}/${i}_geno02
+    #plink_1.90 --threads 1 --bfile ${dirI}/${i} --geno 0.2 --make-bed --out ${dirI}/${i}_geno02
       #610k 550293 variants loaded from .bim file. 47382 variants removed due to missing genotype data (--geno). 502911 variants and 4878 people pass filters and QC.
       #EPI/QTWIN - 323811 variants loaded from .bim file. 38319 variants removed due to --geno 285492 variants and 1765 people pass filters and QC.
       #AMFS 801407 variants loaded from .bim file. 3230 variants removed due to missing genotype data (--geno). 798177 variants and 978 people pass filters and QC.
@@ -3382,16 +3398,17 @@ do
       #HEI 217285 variants loaded 4217 variants removed due to missing genotype data 213068 variants and 2437 people pass filters and QC.
       #WAMHS 929087 variants loaded 293235 variants removed due to --geno 635852 variants and 3492 people pass filters and QC. <<doesn't seem to be right for WMAHS, next stip is removing all the OAG1 samples. 
 
-    if `echo ${i} | grep -q WAMHS `
-    then
-      echo -e "\nWAMHS data found; need an diff cleaning step or lose all OAG1 sample due to smaller 610 array\n"
+    #if `echo ${i} | grep -q WAMHS `
+    #then
+      #echo -e "\nWAMHS data found; need an diff cleaning step or lose all OAG1 sample due to smaller 610 array\n"
         #3500 people, 650 0AG1 < 20% 
-      plink_1.90 --threads 1 --bfile ${dirI}/${i} --geno 0.1 --make-bed --out ${dirI}/${i}_geno02
+      #plink_1.90 --threads 1 --bfile ${dirI}/${i} --geno 0.1 --make-bed --out ${dirI}/${i}_geno02
         #929087 variants loaded from .bim file. 337363 variants removed due to --geno 591724 variants and 3492 people pass filters and QC.
 
-    fi
-   
-    data_in=${dirI}/${i}_geno02
+    #fi
+   for data_in in ${dirI}/temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2
+   do
+    #data_in=${dirI}/${i}_geno02
     plink_1.90 --threads 1 --bfile ${data_in} --missing --out ${data_in}_miss --silent
     plink_1.90 --threads 1 --bfile ${data_in} --het --out ${data_in}_het --silent
 
