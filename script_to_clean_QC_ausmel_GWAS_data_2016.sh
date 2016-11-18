@@ -3466,10 +3466,10 @@ q()
 EOF
      echo ""
    cat ${data_in}_het.het.extreme ${data_in}_miss.imiss.missing | sort | uniq | grep -v "FID IID" > ${data_in}_remove; wc -l ${data_in}_remove
-      #610k 27. EPI/QTWIN 37. Plot looks okay as in doesn't seem to be that many outliers but all the values are in the range 0.28-0.36 so would have been plotted (I was concerned some extreme values might not be plotted, but not the case. AMFS 7. QMEGA_omni 12 HEI 18. WAMHS 68
     echo ""
     #now clean properly - hwe first at 5e-4, then 5e-10 in cases
-    plink_1.90 --threads 1 --bfile ${data_in} --geno 0.03 --mind 0.03 --hwe 5e-4 midp --make-bed --out ${data_in}_geno3_mind3_hweCo --remove ${data_in}_remove
+    #since 86 have extreme het of which 68 are cases, I won't drop these people.
+    plink_1.90 --threads 1 --bfile ${data_in} --geno 0.03 --mind 0.03 --hwe 5e-4 midp --make-bed --out ${data_in}_geno3_mind3_hweCo #--remove ${data_in}_remove
        #610k: 502911 variants loaded from .bim file. 4878 people (1271 males, 3607 females) loaded from .fam. --remove: 4851 people remaining. 0 people removed due to missing genotype data (--mind). 2246 variants removed due to missing genotype data (--geno). --hwe: 410 variants removed. 500255 variants and 4851 people pass filters and QC.
       #EPIGENE/QTWIN 285492 variants loaded from .bim file. 1765 people (939 males, 826 females) loaded from .fam. --remove: 1728 people remaining. 0 people removed due to --mind; 0 variants removed due to --geno --hwe: 206 variants removed. Total genotyping rate in remaining samples is 0.999821. 285286 variants and 1728 people pass filters and QC.
       #AMFS 798177 variants loaded 978 people (384 males, 594 females) loaded --remove: 971 people remaining. 0 people removed due to --mind 0 variants removed due to --geno --hwe: 423 variants removed. 797754 variants and 971 people pass filters and QC.
@@ -3492,28 +3492,32 @@ EOF
 
     echo -e "\nLooking for SNPs with call rates that differ between genders\n"
     awk '{print $1,$2,$3,$4,$5,$5}' ${data_in}_geno3_mind3_hweCo_hweCa.fam > ${data_in}_geno3_mind3_hweCo_hweCa_genders_case.fam
-    plink_1.90 --threads 1 --bed ${data_in}_geno3_mind3_hweCo_hweCa.bed --bim ${data_in}_geno3_mind3_hweCo_hweCa.bim --fam ${data_in}_geno3_mind3_hweCo_hweCa_genders_case.fam --test-missing midp perm --out ${data_in}_geno3_mind3_hweCo_hweCa
+    plink_1.90 --threads 1 --bed ${data_in}_geno3_mind3_hweCo_hweCa.bed --bim ${data_in}_geno3_mind3_hweCo_hweCa.bim --fam ${data_in}_geno3_mind3_hweCo_hweCa_genders_case.fam --test-missing midp perm --out ${data_in}_geno3_mind3_hweCo_hweCa ##perm can be left out in concern of time
+    #plink_1.90 --threads 1 --bed ${data_in}_geno3_mind3_hweCo_hweCa.bed --bim ${data_in}_geno3_mind3_hweCo_hweCa.bim --fam ${data_in}_geno3_mind3_hweCo_hweCa_genders_case.fam --test-missing midp --out ${data_in}_geno3_mind3_hweCo_hweCa
     echo ""   
     #not sure how I setlled on this p value - probably N SNPs in MIA
-    awk 'NR==1 || $5<1.6e-7' ${data_in}_geno3_mind3_hweCo_hweCa.missing
+    awk 'NR==1 || $5<1.6e-7' ${data_in}_geno3_mind3_hweCo_hweCa.missing | wc -l
       #EPI/QTWIN - none. AMFS Bunch on chrX with 0 missing in A and ~5% in controls. 610k - bunch 0 missing in 'controls' and ~3% in 'cases'. QMEGA_omni 3 on chrX with 0 missingness in 'unnafected' amd near 4% in 'cases'. HEI - 3 SNPs again 3% missing in 'controls' nad 0% in 'case'. WAMHS - all but 1 chrX and as the others - complete in ;Affected;, high missing (3%) in UNAF
     echo ""
     #again not sure on this p value
     awk '$3<5e-4 {print $2}' ${data_in}_geno3_mind3_hweCo_hweCa.missing.perm > ${dirI}/temp_SNP_diff_missing_by_gender; wc -l ${dirI}/temp_SNP_diff_missing_by_gender
+    #awk '$3<5e-4 {print $2}' ${data_in}_geno3_mind3_hweCo_hweCa.missing > ${dirI}/temp_SNP_diff_missing_by_gender; wc -l ${dirI}/temp_SNP_diff_missing_by_gender
       #EPIGENE/QTWIN 7. AMFS 373. 610k 1026. QMEGA_omni 73. HEI 32. WAMHS 185
 
     echo -e "\nLooking for SNPs with call rates that differ between cases and controls\n"
     plink_1.90 --threads 1 --bfile ${data_in}_geno3_mind3_hweCo_hweCa --test-missing midp perm --out ${data_in}_geno3_mind3_hweCo_hweCa
+    #plink_1.90 --threads 1 --bfile ${data_in}_geno3_mind3_hweCo_hweCa --test-missing midp --out ${data_in}_geno3_mind3_hweCo_hweCa
     echo ""
     #again no idea on these p values, presumably just analogous to what we use in HWE
-    awk 'NR==1 || $3<5e-4' ${data_in}_geno3_mind3_hweCo_hweCa.missing.perm | wc -l
+    awk 'NR==1 || $3<5e-4' ${data_in}_geno3_mind3_hweCo_hweCa.missing | wc -l
       #EPI/QTWIN - 389. AMFS 10, 610k 4082. QMEGA_omni 2674 HEI 4532 WAMHS 6889
     echo ""
     awk 'NR==1 || $5<5e-4' ${data_in}_geno3_mind3_hweCo_hweCa.missing | wc -l
        #EPI/QTWIN - 403. AMFS 10. 610k 4180. QMEGA_omni 2758 HEI 4542 WAMHS 7109
     echo ""
     awk '$3<5e-4 {print $2}' ${data_in}_geno3_mind3_hweCo_hweCa.missing.perm > ${dirI}/temp_SNP_diff_missing_by_status; wc -l ${dirI}/temp_SNP_diff_missing_by_status
-       #EPI/QTIN 388 (drop header). AMFS 9. 410k 4081 QMEGA_omni 2673 HEI 4531 WAMHS 6888
+    #awk '$3<5e-4 {print $2}' ${data_in}_geno3_mind3_hweCo_hweCa.missing > ${dirI}/temp_SNP_diff_missing_by_status; wc -l ${dirI}/temp_SNP_diff_missing_by_status 
+    #EPI/QTIN 388 (drop header). AMFS 9. 410k 4081 QMEGA_omni 2673 HEI 4531 WAMHS 6888
     echo ""
     cat ${dirI}/temp_SNP_diff_missing_by_gender ${dirI}/temp_SNP_diff_missing_by_status | sort | uniq  > ${dirI}/temp_SNP_diff_exclude; wc -l ${dirI}/temp_SNP_diff_exclude
        #EPI/QTWIN 391 (4 failed both test). AMFS 382 - all uniq. 610k 4540 ~ 500 overlap (note though that gender it a bit confoudned with status here). QMEGA_omni 2716; some overlap. HEI 4556 ~10 overlap WAMHS 7046 - most overlap
@@ -3530,7 +3534,7 @@ EOF
     rm -f ${dirI}/temp_SNP_diff_exclude ${dirI}/temp_SNP_diff_missing_by_status ${dirI}/temp_SNP_diff_missing_by_gender ${data_in}_geno3_mind3_hweCo_hweCa.* ${data_in}_geno3_mind3_hweCo_hweCa_genders_case.fam ${data_in}_geno3_mind3_hweCo
 
   done #cleaning
-done #turn on/off
+#done #turn on/off
 
 ########################################################################
 #8.0 Combine with each other, and with 1KG then run PCA and IBD
@@ -3544,57 +3548,57 @@ done #turn on/off
   #awk '{print $1,$2,"OAG2_controls"}' temp_2016_cleaning_OAGphase2_controls_aligned_1KG.fam >> OAG_controls_IDs.txt
 
 #takes a couple of hours, don't really need to do each  time
-for x in #1
-do
+#for x in #1
+#do
   echo -e "\nRunning IBD/PCA\n"
   echo "FID IID GROUP" > ${dirI}/temp_PCA_group
 
-  set1=temp_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
-  var1=`echo $set1 | sed 's/temp_2016_cleaning_//g' | sed 's/_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff//g'`
+  set1=${dirI}/temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_hweCa_diff
+  var1=`echo $set1 | sed 's/temp_2016_cleaning_//g' | sed 's/_aligned_1KG_min_clean2_geno3_mind3_hweCo_hweCa_diff//g'`
     awk '$6==1 {print $1,$2,"'''${var1}'''_control"}' ${dirI}/${set1}.fam >> ${dirI}/temp_PCA_group
     awk '$6==2 {print $1,$2,"'''${var1}'''_case"}' ${dirI}/${set1}.fam  >> ${dirI}/temp_PCA_group 
     cut -d" " -f3 ${dirI}/temp_PCA_group | sort | uniq -c
   echo ""
-  set2=temp_2016_cleaning_QMEGA_610k_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
-  var2=`echo $set2 | sed 's/temp_2016_cleaning_//g' | sed 's/_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff//g'` 
-    awk '$6==1 && $1~/E/ {print $1,$2,"ENDO_control"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
-    awk '$6==1 && !($1~/E/) {print $1,$2,"610k_QTWIN_control"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group 
-    awk '$6==2 {print $1,$2,"'''${var2}'''_case"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
-    cut -d" " -f3 ${dirI}/temp_PCA_group | sort | uniq -c
+  #set2=temp_2016_cleaning_QMEGA_610k_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
+  #var2=`echo $set2 | sed 's/temp_2016_cleaning_//g' | sed 's/_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff//g'` 
+    #awk '$6==1 && $1~/E/ {print $1,$2,"ENDO_control"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
+    #awk '$6==1 && !($1~/E/) {print $1,$2,"610k_QTWIN_control"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group 
+    #awk '$6==2 {print $1,$2,"'''${var2}'''_case"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
+    #cut -d" " -f3 ${dirI}/temp_PCA_group | sort | uniq -c
       #   1794 610k_QTWIN_control
       # 544 AMFS_case
       #427 AMFS_control
       #2136 ENDO_control
       #1 group
       #921 QMEGA_610k_case
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2} --make-bed --out ${dirI}/temp_merge_1
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2} --make-bed --out ${dirI}/temp_merge_1
      #AMFS and QMEGA_610k - rs7961667' and 'SNP12-132128064 have the same position, only pair, not worth fixing. Total genotyping rate is 0.546202 999157 variants and 5822 people pass filters and QC.
-  echo ""
-  set1=temp_merge_1
-  set2=temp_2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
-   var2=`echo $set2 | sed 's/temp_2016_cleaning_//g' | sed 's/_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff//g'`
-    awk '$6==1 {print $1,$2,"SDH_control"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
-    awk '$6==2 {print $1,$2,"'''${var2}'''_case"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
-    cut -d" " -f3 ${dirI}/temp_PCA_group | sort | uniq -c
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2} --make-bed --out ${dirI}/temp_merge_2
+  #echo ""
+  #set1=temp_merge_1
+  #set2=temp_2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
+   #var2=`echo $set2 | sed 's/temp_2016_cleaning_//g' | sed 's/_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff//g'`
+    #awk '$6==1 {print $1,$2,"SDH_control"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
+    #awk '$6==2 {print $1,$2,"'''${var2}'''_case"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
+    #cut -d" " -f3 ${dirI}/temp_PCA_group | sort | uniq -c
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2} --make-bed --out ${dirI}/temp_merge_2
      #again warning rs7961667' and 'SNP12-132128064 . Total genotyping rate is 0.586701. 1001534 variants and 7074 people pass filters and QC.
-  echo ""
-  set1=temp_merge_2
-  set2=temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
-   var2=`echo $set2 | sed 's/temp_2016_cleaning_//g' | sed 's/_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff//g'`
-    awk '$6==1 {print $1,$2,"'''${var2}'''_control"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
-    awk '$6==2 {print $1,$2,"'''${var2}'''_case"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
-    cut -d" " -f3 ${dirI}/temp_PCA_group | sort | uniq -c
-  echo""
-  plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2} --make-bed --out ${dirI}/temp_merge_1
+  #echo ""
+  #set1=temp_merge_2
+  #set2=temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
+   #var2=`echo $set2 | sed 's/temp_2016_cleaning_//g' | sed 's/_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff//g'`
+    #awk '$6==1 {print $1,$2,"'''${var2}'''_control"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
+    #awk '$6==2 {print $1,$2,"'''${var2}'''_case"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
+    #cut -d" " -f3 ${dirI}/temp_PCA_group | sort | uniq -c
+  #echo""
+  #plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2} --make-bed --out ${dirI}/temp_merge_1
      #now have 11 multiple position warnings which is annoying, but have to be SNPs not in 1kG. Not enough to fix given this is a quick compariosn. 11 3+ alleles.
   #First pass testing found 2 indels not in phase 1 1kg (so left as I/D) but have the correct alleles in the QTWIN/EPIGENE so can't be resolved. Checked the other nine are just flips not in 1kG so couldn't be aligned
-  echo rs28369942 > ${dirI}/temp_merge_1-merge.exclude
-  echo rs17884215 >> ${dirI}/temp_merge_1-merge.exclude
-  plink_1.90 --threads 1 --bfile ${dirI}/${set2} --flip ${dirI}/temp_merge_1-merge.missnp --make-bed --out ${dirI}/${set2}_flip --exclude ${dirI}/temp_merge_1-merge.exclude
-  echo ""
+  #echo rs28369942 > ${dirI}/temp_merge_1-merge.exclude
+  #echo rs17884215 >> ${dirI}/temp_merge_1-merge.exclude
+  #plink_1.90 --threads 1 --bfile ${dirI}/${set2} --flip ${dirI}/temp_merge_1-merge.missnp --make-bed --out ${dirI}/${set2}_flip --exclude ${dirI}/temp_merge_1-merge.exclude
+  #echo ""
   plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2}_flip --make-bed --out ${dirI}/temp_merge_1
      #263 same position warning, 9 multiple position warnings. Not sure if may as well remap them properly to have it done? Total genotyping rate is 0.505295 1045237 variants and 8802 people pass filters and QC.
   #interimn clean
