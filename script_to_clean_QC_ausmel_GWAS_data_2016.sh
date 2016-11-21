@@ -3550,40 +3550,57 @@ EOF
 #takes a couple of hours, don't really need to do each  time
 #for x in #1
 #do
+  #since many SNPs will be discarded if U use the missigness diff, for now I go ahead without dropping them, but I should keep eye on them:
+  cd ${dirI}
   echo -e "\nRunning IBD/PCA\n"
   echo "FID IID GROUP" > ${dirI}/temp_PCA_group
-
-  set1=${dirI}/temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_hweCa_diff
-  var1=`echo $set1 | sed 's/temp_2016_cleaning_//g' | sed 's/_aligned_1KG_min_clean2_geno3_mind3_hweCo_hweCa_diff//g'`
+  set1=temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo
+  var1=`echo $set1 | sed 's/temp_//g' | sed 's/_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo//g'`
     awk '$6==1 {print $1,$2,"'''${var1}'''_control"}' ${dirI}/${set1}.fam >> ${dirI}/temp_PCA_group
     awk '$6==2 {print $1,$2,"'''${var1}'''_case"}' ${dirI}/${set1}.fam  >> ${dirI}/temp_PCA_group 
     cut -d" " -f3 ${dirI}/temp_PCA_group | sort | uniq -c
-  echo ""
-  #set2=temp_2016_cleaning_QMEGA_610k_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
+  
+   echo ""  
+   #POAG phase 3:
+   dirJG=/working/lab_stuartma/puyaG/glaucoma/POAG_cases_recent_011015_0928
+   raw_data4=ANZRAG_POAG_cases_phase3_QIMR_twins_controls_merged_cleaned5_relatedness_removed2_ancestry_outliers_removed
+
+   #OAG phase 1 and 2
+   dirOAG=/working/lab_stuartma/puyaG/glaucoma
+   raw_data5=WAMHS_GLUACOMA_IBD_BEACON_final_clean_IBD_PCA_outliers_removed
+
+  set2=${raw_data4}
+  var2=ANZRAG_POAG_phase3
   #var2=`echo $set2 | sed 's/temp_2016_cleaning_//g' | sed 's/_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff//g'` 
-    #awk '$6==1 && $1~/E/ {print $1,$2,"ENDO_control"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
-    #awk '$6==1 && !($1~/E/) {print $1,$2,"610k_QTWIN_control"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group 
-    #awk '$6==2 {print $1,$2,"'''${var2}'''_case"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
-    #cut -d" " -f3 ${dirI}/temp_PCA_group | sort | uniq -c
-      #   1794 610k_QTWIN_control
-      # 544 AMFS_case
-      #427 AMFS_control
-      #2136 ENDO_control
-      #1 group
-      #921 QMEGA_610k_case
-  #echo ""
-  #plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2} --make-bed --out ${dirI}/temp_merge_1
-     #AMFS and QMEGA_610k - rs7961667' and 'SNP12-132128064 have the same position, only pair, not worth fixing. Total genotyping rate is 0.546202 999157 variants and 5822 people pass filters and QC.
-  #echo ""
-  #set1=temp_merge_1
-  #set2=temp_2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
-   #var2=`echo $set2 | sed 's/temp_2016_cleaning_//g' | sed 's/_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff//g'`
-    #awk '$6==1 {print $1,$2,"SDH_control"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
-    #awk '$6==2 {print $1,$2,"'''${var2}'''_case"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
-    #cut -d" " -f3 ${dirI}/temp_PCA_group | sort | uniq -c
-  #echo ""
-  #plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2} --make-bed --out ${dirI}/temp_merge_2
-     #again warning rs7961667' and 'SNP12-132128064 . Total genotyping rate is 0.586701. 1001534 variants and 7074 people pass filters and QC.
+    #awk '$6==1 {print $1,$2,"ENDO_control"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
+    #awk '$6==1 {print $1,$2,"610k_QTWIN_control"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group 
+    awk '$6==1 {print $1,$2,"'''${var2}'''_control"}' ${dirJG}/${set2}.fam  >> ${dirI}/temp_PCA_group
+    awk '$6==2 {print $1,$2,"'''${var2}'''_case"}' ${dirJG}/${set2}.fam  >> ${dirI}/temp_PCA_group
+    cut -d" " -f3 ${dirI}/temp_PCA_group | sort | uniq -c
+  plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirJG}/${set2} --make-bed --out ${dirI}/temp_merge_1
+  sed -n '/A\tT\|T\tA\|C\tG\|G\tC/p' ${dirJG}/${set2}.bim | wc -l
+  #0 needs flipping but since amb SNPs have been dropped from ${dirJG}/${set2}, we don't need to worry about strand issue
+  plink_1.90 --threads 1 --bfile ${dirJG}/${set2} --flip ${dirI}/temp_merge_1-merge.missnp --make-bed --out ${dirI}/${set2}_flip
+  plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2}_flip --make-bed --out ${dirI}/temp_merge_1 --geno 0.1
+  rm -f ${dirI}/${set2}_flip*
+
+  echo ""
+  set2=${raw_data5}
+  var2=ANZRAG_POAG_phase1_2
+  #var2=`echo $set2 | sed 's/temp_2016_cleaning_//g' | sed 's/_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff//g'`
+  awk '$6==1 {print $1,$2,"'''${var2}'''_control"}' ${dirOAG}/${set2}.fam  >> ${dirI}/temp_PCA_group
+  awk '$6==2 {print $1,$2,"'''${var2}'''_case"}' ${dirOAG}/${set2}.fam  >> ${dirI}/temp_PCA_group
+    cut -d" " -f3 ${dirI}/temp_PCA_group | sort | uniq -c
+  echo ""
+  plink_1.90 --threads 1 --bfile ${dirI}/temp_merge_1 --bmerge ${dirOAG}/${set2} --make-bed --out ${dirI}/temp_merge_2
+  sed -n '/A\tT\|T\tA\|C\tG\|G\tC/p' ${dirOAG}/${set2}.bim | wc -l
+  #0 needs flipping but since amb SNPs have been dropped from  ${dirOAG}/${set2}, we don't need to worry about strand issue.
+  plink_1.90 --threads 1 --bfile ${dirOAG}/${set2} --flip ${dirI}/temp_merge_2-merge.missnp --make-bed --out ${dirI}/${set2}_flip
+  plink_1.90 --threads 1 --bfile ${dirI}/temp_merge_1 --bmerge ${dirI}/${set2}_flip --make-bed --out ${dirI}/temp_merge_2
+  ##still one SNP has allale issue
+  plink_1.90 --threads 1 --bfile ${dirI}/${set2}_flip --exclude ${dirI}/temp_merge_2-merge.missnp --make-bed --out ${dirI}/${set2}_flip2
+  plink_1.90 --threads 1 --bfile ${dirI}/temp_merge_1 --bmerge ${dirI}/${set2}_flip2 --make-bed --out ${dirI}/temp_merge_2 --allow-no-sex --geno 0.1
+  rm -f ${dirI}/temp_merge_1* ${dirI}/${set2}_flip* 
   #echo ""
   #set1=temp_merge_2
   #set2=temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
@@ -3599,35 +3616,35 @@ EOF
   #echo rs17884215 >> ${dirI}/temp_merge_1-merge.exclude
   #plink_1.90 --threads 1 --bfile ${dirI}/${set2} --flip ${dirI}/temp_merge_1-merge.missnp --make-bed --out ${dirI}/${set2}_flip --exclude ${dirI}/temp_merge_1-merge.exclude
   #echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2}_flip --make-bed --out ${dirI}/temp_merge_1
+  #plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2}_flip --make-bed --out ${dirI}/temp_merge_1
      #263 same position warning, 9 multiple position warnings. Not sure if may as well remap them properly to have it done? Total genotyping rate is 0.505295 1045237 variants and 8802 people pass filters and QC.
   #interimn clean
-  rm -f ${dirI}/temp_merge_1-merge.exclude ${dirI}/temp_merge_1-merge.missnp ${dirI}/${set2}_flip
-  echo ""
-  set1=temp_merge_1
-  set2=temp_2016_cleaning_HEIDELBERG_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
-   var2=`echo $set2 | sed 's/temp_2016_cleaning_//g' | sed 's/_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff//g'`
-    awk '$6==1 {print $1,$2,"'''${var2}'''_control"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
-    awk '$6==2 {print $1,$2,"'''${var2}'''_case"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
-    cut -d" " -f3 ${dirI}/temp_PCA_group | sort | uniq -c
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2} --make-bed --out ${dirI}/temp_merge_2
+  #rm -f ${dirI}/temp_merge_1-merge.exclude ${dirI}/temp_merge_1-merge.missnp ${dirI}/${set2}_flip
+  #echo ""
+  #set1=temp_merge_1
+  #set2=temp_2016_cleaning_HEIDELBERG_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
+   #var2=`echo $set2 | sed 's/temp_2016_cleaning_//g' | sed 's/_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff//g'`
+    #awk '$6==1 {print $1,$2,"'''${var2}'''_control"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
+    #awk '$6==2 {print $1,$2,"'''${var2}'''_case"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
+    #cut -d" " -f3 ${dirI}/temp_PCA_group | sort | uniq -c
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2} --make-bed --out ${dirI}/temp_merge_2
     #221 3+ alleles
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/${set2} --flip ${dirI}/temp_merge_2-merge.missnp --make-bed --out ${dirI}/${set2}_flip
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/${set2} --flip ${dirI}/temp_merge_2-merge.missnp --make-bed --out ${dirI}/${set2}_flip
      #--flip: 221 SNPs flipped.
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2}_flip --make-bed --out ${dirI}/temp_merge_2
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2}_flip --make-bed --out ${dirI}/temp_merge_2
      #322 same positions warnings, Total genotyping rate is 0.437729 1048978 variants and 11221 people pass filters and QC.
-  rm -f ${dirI}/${set2}_flip ${dirI}/temp_merge_2-merge.missnp
-  echo ""
-  set1=temp_merge_2
-  set2=temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
-  var2=`echo $set2 | sed 's/temp_2016_cleaning_//g' | sed 's/_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff//g'`
-  cat ${dirI}/OAG_controls_IDs.txt  >> ${dirI}/temp_PCA_group
-  awk 'NR==FNR {a[$1,$2];next} !($1,$2) in a {print $1,$2,"IBD_controls"}' ${dirI}/OAG_controls_IDs.txt <( awk '$6==1 {print $1,$2}' ${dirI}/${set2}.fam ) >> ${dirI}/temp_PCA_group
-  awk '$6==2 {print $1,$2,"'''${var2}'''_case"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
-  cut -d" " -f3 ${dirI}/temp_PCA_group | sort | uniq -c
+  #rm -f ${dirI}/${set2}_flip ${dirI}/temp_merge_2-merge.missnp
+  #echo ""
+  #set1=temp_merge_2
+  #set2=temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
+  #var2=`echo $set2 | sed 's/temp_2016_cleaning_//g' | sed 's/_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff//g'`
+  #cat ${dirI}/OAG_controls_IDs.txt  >> ${dirI}/temp_PCA_group
+  #awk 'NR==FNR {a[$1,$2];next} !($1,$2) in a {print $1,$2,"IBD_controls"}' ${dirI}/OAG_controls_IDs.txt <( awk '$6==1 {print $1,$2}' ${dirI}/${set2}.fam ) >> ${dirI}/temp_PCA_group
+  #awk '$6==2 {print $1,$2,"'''${var2}'''_case"}' ${dirI}/${set2}.fam  >> ${dirI}/temp_PCA_group
+  #cut -d" " -f3 ${dirI}/temp_PCA_group | sort | uniq -c
     # 1794 610k_QTWIN_control
     #  544 AMFS_case
     #  427 AMFS_control
@@ -3644,57 +3661,59 @@ EOF
     #  689 QMEGA_omni_case
     #  562 SDH_control
     # 1268 WAMHS_OAG_IBD_case
-  plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2} --make-bed --out ${dirI}/temp_merge_1
+  #plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2} --make-bed --out ${dirI}/temp_merge_1
      #108 3+ alleles
-  plink_1.90 --threads 1 --bfile ${dirI}/${set2} --flip ${dirI}/temp_merge_1-merge.missnp --make-bed --out ${dirI}/${set2}_flip
+  #plink_1.90 --threads 1 --bfile ${dirI}/${set2} --flip ${dirI}/temp_merge_1-merge.missnp --make-bed --out ${dirI}/${set2}_flip
      #--flip: 108 SNPs flipped.
-  echo ""
-  plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2}_flip --make-bed --out ${dirI}/temp_merge_1
+  #echo ""
+  #plink_1.90 --threads 1 --bfile ${dirI}/${set1} --bmerge ${dirI}/${set2}_flip --make-bed --out ${dirI}/temp_merge_1
      #408 same position warnings
-  rm -f ${dirI}/temp_merge_1-merge.missnp ${dirI}/${set2}_flip 
-  echo
-  wc -l ${dirI}/temp_merge_1.fam
+  #rm -f ${dirI}/temp_merge_1-merge.missnp ${dirI}/${set2}_flip 
+  #echo
+  #wc -l ${dirI}/temp_merge_1.fam
     #14645
   echo ""
   wc -l ${dirI}/temp_PCA_group
     #14689 <<about right, grabeed the OAG IDs pre cleaning. 
-  echo ""
+  awk '{print $1, $2}' /working/lab_stuartma/puyaG/BEEA_meta_analysis/BEACON/20101214_1000genomes_samples.txt | sed '1,2d' | sed  '1i Population ID' > ${dirI}/20101214_1000genomes_samples
+  awk 'NR==FNR{a[$2]=$1;next}($2 in a){print a[$2], $2, $1}' /reference/genepi/public_reference_panels/1000G_20101123_v3/derived_plinkformat/chr1.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.ALL.fam ${dirI}/20101214_1000genomes_samples > ${dirI}/temp_1000G
+  #echo ""
   #get the 1kG group data  
-  awk '{print $1,$2,$3,$4,$5,$6}' /mnt/lustre/home/matthewL/QUINN_PCA/DATA/ALL_data_merged_1000G_numeric_codes_unix.txt > ${dirI}/temp_ALL_data_merged_1000G_numeric_codes.txt
-  \cp /mnt/lustre/home/matthewL/QUINN_PCA/DATA/final_1000G_codes_w_ceph_unix.txt ${dirI}/temp_final_1000G_codes_w_ceph.txt
-  sed -i 's/\t/ /g' ${dirI}/temp_ALL_data_merged_1000G_numeric_codes.txt
-  sed -i 's/ \+/ /g' ${dirI}/temp_ALL_data_merged_1000G_numeric_codes.txt
+  #awk '{print $1,$2,$3,$4,$5,$6}' /mnt/lustre/home/matthewL/QUINN_PCA/DATA/ALL_data_merged_1000G_numeric_codes_unix.txt > ${dirI}/temp_ALL_data_merged_1000G_numeric_codes.txt
+  #cp /mnt/lustre/home/matthewL/QUINN_PCA/DATA/final_1000G_codes_w_ceph_unix.txt ${dirI}/temp_final_1000G_codes_w_ceph.txt
+  #sed -i 's/\t/ /g' ${dirI}/temp_ALL_data_merged_1000G_numeric_codes.txt
+  #sed -i 's/ \+/ /g' ${dirI}/temp_ALL_data_merged_1000G_numeric_codes.txt
 
   #make a headed file to allow awk to merge headers
-  echo "PHENOTYPE GROUP" > ${dirI}/temp_final_1000G_codes_w_ceph_2.txt
-  sed 's/\t/ /g' ${dirI}/temp_final_1000G_codes_w_ceph.txt >> ${dirI}/temp_final_1000G_codes_w_ceph_2.txt
-  echo ""
-  head ${dirI}/temp_final_1000G_codes_w_ceph_2.txt
-  echo ""
-  head ${dirI}/temp_ALL_data_merged_1000G_numeric_codes.txt
-  echo ""
+  #echo "PHENOTYPE GROUP" > ${dirI}/temp_final_1000G_codes_w_ceph_2.txt
+  #sed 's/\t/ /g' ${dirI}/temp_final_1000G_codes_w_ceph.txt >> ${dirI}/temp_final_1000G_codes_w_ceph_2.txt
+  #echo ""
+  #head ${dirI}/temp_final_1000G_codes_w_ceph_2.txt
+  #echo ""
+  #head ${dirI}/temp_ALL_data_merged_1000G_numeric_codes.txt
+  #echo ""
   #append GROUP names to IDs
-  awk 'NR==FNR {a[$1]=$2;next} $6 in a {print $1,$2,a[$6]}' ${dirI}/temp_final_1000G_codes_w_ceph_2.txt ${dirI}/temp_ALL_data_merged_1000G_numeric_codes.txt > ${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups.txt; wc -l ${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups.txt
+  #awk 'NR==FNR {a[$1]=$2;next} $6 in a {print $1,$2,a[$6]}' ${dirI}/temp_final_1000G_codes_w_ceph_2.txt ${dirI}/temp_ALL_data_merged_1000G_numeric_codes.txt > ${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups.txt; wc -l ${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups.txt
     #1995
-  echo ""
-  head ${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups.txt
-  echo ""
-  echo "FID IID GROUP SOURCE" > ${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups_GWAS.txt  
-  awk 'NR>1 {print $1,$2,$3,"GWAS"}' ${dirI}/temp_PCA_group >> ${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups_GWAS.txt
-  awk 'NR>1 {print $1,$2,$3,"1000G"}' ${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups.txt >> ${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups_GWAS.txt; wc -l ${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups_GWAS.txt
+  #echo ""
+  #head ${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups.txt
+  #echo ""
+  echo "FID IID GROUP SOURCE" > ${dirI}/temp_ALL_data_merged_1000G_groups_GWAS.txt  
+  awk 'NR>1 {print $1,$2,$3,"GWAS"}' ${dirI}/temp_PCA_group >> ${dirI}/temp_ALL_data_merged_1000G_groups_GWAS.txt
+  #awk 'NR>1 {print $1,$2,$3,"1000G"}' ${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups.txt >> ${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups_GWAS.txt; wc -l ${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups_GWAS.txt
+  awk 'NR>1 {print $1,$2,$3,"1000G"}' ${dirI}/temp_1000G >> ${dirI}/temp_ALL_data_merged_1000G_groups_GWAS.txt; wc -l ${dirI}/temp_ALL_data_merged_1000G_groups_GWAS.txt
+  
+  #rm -f ${dirI}/temp_ALL_data_merged_1000G_numeric_codes.txt ${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups.txt ${dirI}/temp_PCA_group  ${dirI}/temp_final_1000G_codes_w_ceph.txt ${dirI}/temp_final_1000G_codes_w_ceph_2.txt
 
-  rm -f ${dirI}/temp_ALL_data_merged_1000G_numeric_codes.txt ${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups.txt ${dirI}/temp_PCA_group  ${dirI}/temp_final_1000G_codes_w_ceph.txt ${dirI}/temp_final_1000G_codes_w_ceph_2.txt
-
-  G1000_pheno=${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups_GWAS.txt
-
+  #G1000_pheno=${dirI}/temp_ALL_data_merged_1000G_numeric_codes_groups_GWAS.txt
   #extract 1kg on SNPLIST
-  awk '{print $2}' ${dirI}/temp_merge_1.bim > ${dirI}/temp_merge_1_snplist
+  awk '{print $2}' ${dirI}/temp_merge_2.bim > ${dirI}/temp_merge_2_snplist
   for j in `seq 1 22`
   do
     dirV=/reference/genepi/public_reference_panels/1000G_20101123_v3/derived_plinkformat
-    LD_FILE=/working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/MANIFEST_CHAIN_QC_FILES/eigenstrat_excluded_regions_hg19.txt
-    echo -e "\nExtracting chr ${j} of the 1000 genomes data for temp_merge_1 SNPLIST"
-    plink_1.90 --threads 1 --bfile ${dirV}/chr${j}.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.ALL --extract ${dirI}/temp_merge_1_snplist --make-bed --out ${dirI}/temp_chr${j}.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.ALL --silent
+    LD_FILE=/working/lab_stuartma/puyaG/fullsamples/myrange.txt
+    echo -e "\nExtracting chr ${j} of the 1000 genomes data for temp_merge_2 SNPLIST"
+    plink_1.90 --threads 1 --bfile ${dirV}/chr${j}.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.ALL --extract ${dirI}/temp_merge_2_snplist --make-bed --out ${dirI}/temp_chr${j}.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.ALL --silent
   done
   #make a merge list
   echo "${dirI}/temp_chr2.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.ALL.bed ${dirI}/temp_chr2.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.ALL.bim ${dirI}/temp_chr2.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.ALL.fam" > ${dirI}/temp_merge_1_HAPMAP_mergelist_chromsomes.txt
@@ -3706,7 +3725,7 @@ EOF
 
   awk '{print $1,$2,1}' ${dirI}/temp_chr1.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.ALL.fam > ${dirI}/temp_chr1.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.ALL.pheno
 
-  LD_FILE=/working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/MANIFEST_CHAIN_QC_FILES/eigenstrat_excluded_regions_hg19.txt
+  LD_FILE=/working/lab_stuartma/puyaG/fullsamples/myrange.txt
 
   plink_1.90 --threads 1 --bfile ${dirI}/temp_chr1.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.ALL --merge-list ${dirI}/temp_merge_1_HAPMAP_mergelist_chromsomes.txt --exclude range ${LD_FILE} --make-bed --out ${dirI}/temp_merge_1_ALL.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.ALL_pre --pheno ${dirI}/temp_chr1.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.ALL.pheno
    #991299 variants and 1092 people pass filters and QC.
@@ -3716,11 +3735,11 @@ EOF
 
   echo ""
   #as 1kG aligned hopefully wont need to flip any SNPS
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_merge_1 --bmerge ${dirI}/temp_merge_1_ALL.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.ALL_pre --make-bed --out ${dirI}/temp_merge_2
+  plink_1.90 --threads 1 --bfile ${dirI}/temp_merge_2 --bmerge ${dirI}/temp_merge_1_ALL.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.ALL_pre --make-bed --out ${dirI}/temp_merge_3 --allow-no-sex
     #408 same position warnings. Total genotyping rate is 0.493379. 1060058 variants and 15737 people pass filters and QC. Among remaining phenotypes, 5403 are cases and 10333 are controls.
   echo ""
   #clean
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_merge_2 --geno 0.03 --make-bed --out  ${dirI}/temp_merge_1
+  plink_1.90 --threads 1 --bfile ${dirI}/temp_merge_3 --geno 0.03 --make-bed --out  ${dirI}/temp_merge_1
      #1004866 variants removed due to missing genotype data (--geno) 55192 variants and 15737 people pass filters and QC. (!!!!)
   #+++++might need a different approach, losing too many SNPs
   plink_1.90 --threads 1 --bfile ${dirI}/temp_merge_1 --indep 50 5 2 --out ${dirI}/temp_merge_1_LD --exclude range ${LD_FILE}
@@ -3731,23 +3750,28 @@ EOF
 
   ###rough PCA ---takes about 30-40 min to run
   echo -e "\nRunning PCA with --silent otherwise floods log"
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_merge_pruned --pca 20 header --out ${dirI}/temp_merge_pruned_PCA --silent
+  plink_1.90 --bfile ${dirI}/temp_merge_pruned --pca 20 header --out ${dirI}/temp_merge_pruned_PCA --silent
   echo -e "PCA finished...\n"
-  awk 'NR==FNR {a[$2]=$3" "$4;next} $2 in a {print $0,a[$2]}' ${G1000_pheno} ${dirI}/temp_merge_pruned_PCA.eigenvec > ${dirI}/temp_merge_pruned_PCA.eigenvec_IDs; wc -l ${dirI}/temp_merge_pruned_PCA.eigenvec_IDs
-    #15737
+  #awk 'NR==FNR {a[$2]=$3" "$4;next} $2 in a {print $0,a[$2]}' ${G1000_pheno} ${dirI}/temp_merge_pruned_PCA.eigenvec > ${dirI}/temp_merge_pruned_PCA.eigenvec_IDs; wc -l ${dirI}/temp_merge_pruned_PCA.eigenvec_IDs
+   awk 'NR==FNR {a[$2]=$3" "$4;next} $2 in a {print $0,a[$2]}' ${dirI}/temp_ALL_data_merged_1000G_groups_GWAS.txt ${dirI}/temp_merge_pruned_PCA.eigenvec > ${dirI}/temp_merge_pruned_PCA.eigenvec_IDs; wc -l ${dirI}/temp_merge_pruned_PCA.eigenvec_IDs
   echo ""
   wc -l ${dirI}/temp_merge_pruned_PCA.eigenvec
-    #15738 inc header
-  echo ""
+  wc -l ${dirI}/temp_merge_pruned_PCA.eigenvec_IDs
+  wc -l ${dirI}/temp_ALL_data_merged_1000G_groups_GWAS.txt
+  awk '{print $24}'  ${dirI}/temp_merge_pruned_PCA.eigenvec_IDs | sort | uniq -c
+  awk '{print $23}'  ${dirI}/temp_merge_pruned_PCA.eigenvec_IDs | sort | uniq -c
+  awk '{print $3}' ${dirI}/temp_ALL_data_merged_1000G_groups_GWAS.txt | sort | uniq -c
+  ##the difference between wc for temp_merge_pruned_PCA.eigenvec_IDs and temp_ALL_data_merged_1000G_groups_GWAS.txt comes from 529 controls which are the same between phase3 and phase4-5 which once merged in PLINK one duplicate is retained.   
+#echo ""
   head -4 ${dirI}/temp_merge_pruned_PCA.eigenvec_IDs
   echo -e "\nPlotting PCA results across sets; also backing up eigenvec data"
-  rm -f ${dirK}/Melanoma_clean_2016_merged_PCA.eigenvec_IDs
-  cp ${dirI}/temp_merge_pruned_PCA.eigenvec_IDs ${dirK}/Melanoma_clean_2016_merged_PCA.eigenvec_IDs
-  
+  #rm -f ${dirK}/Melanoma_clean_2016_merged_PCA.eigenvec_IDs
+  cp ${dirI}/temp_merge_pruned_PCA.eigenvec_IDs ${dirK}/POAG_clean_2016_merged_PCA.eigenvec_IDs
+  grep -v 'ANZRAG_POAG_phase1_2_case\|ANZRAG_POAG_phase1_2_control\|ANZRAG_POAG_phase3_case\|ANZRAG_POAG_phase3_control' ${dirI}/temp_merge_pruned_PCA.eigenvec_IDs > ${dirI}/temp_merge_pruned_PCA.eigenvec_IDs_phase4and5
 
-  data_set_R=temp_merge_pruned_PCA.eigenvec_IDs
+  data_set_R=temp_merge_pruned_PCA.eigenvec_IDs_phase4and5
   #PCA_out=MEGA_analysis
-  PCA_out=Melanoma_clean_2016_merged
+  PCA_out=POAG_clean_phase4and5_2016_merged
   module load R/3.2.2
 R --no-save <<EOF
 
@@ -3840,11 +3864,12 @@ rect_CEU6<-data.frame(xmin=mP1_CEU-6*sdP1_CEU,ymin=mP2_CEU-6*sdP2_CEU,xmax=mP1_C
 
 #for geom_rect to work I have to assign the plot to an object, then call them together
 
-plot_NW6<-qplot(PC1,PC2,data=PCA_ALL,colour=GROUP,main="MELANOMA vs. 1KG, bounded on CEU+GBR+FIN, 6sd")
-plot_NW3<-qplot(PC1,PC2,data=PCA_ALL,colour=GROUP,main="MELANOMA vs. 1KG, bounded on CEU+GBR+FIN, 3sd")
-plot_NW2<-qplot(PC1,PC2,data=PCA_ALL,colour=GROUP,main="MELANOMA vs. 1KG, bounded on CEU+GBR+FIN, 2sd")
-plot_GBR6<-qplot(PC1,PC2,data=PCA_ALL,colour=GROUP,main="MELANOMA vs. 1KG, bounded on GBR, 6sd")
-plot_CEU6<-qplot(PC1,PC2,data=PCA_ALL,colour=GROUP,main="MELANOMA vs. 1KG, bounded on CEU, 6sd")
+library("ggplot2")
+plot_NW6<-qplot(PC1,PC2,data=PCA_ALL,colour=GROUP,main="POAG vs. 1KG, bounded on CEU+GBR+FIN, 6sd")
+plot_NW3<-qplot(PC1,PC2,data=PCA_ALL,colour=GROUP,main="POAG vs. 1KG, bounded on CEU+GBR+FIN, 3sd")
+plot_NW2<-qplot(PC1,PC2,data=PCA_ALL,colour=GROUP,main="POAG vs. 1KG, bounded on CEU+GBR+FIN, 2sd")
+plot_GBR6<-qplot(PC1,PC2,data=PCA_ALL,colour=GROUP,main="POAG vs. 1KG, bounded on GBR, 6sd")
+plot_CEU6<-qplot(PC1,PC2,data=PCA_ALL,colour=GROUP,main="POAG vs. 1KG, bounded on CEU, 6sd")
 
 
 #NW outliers, 6SD
@@ -3872,7 +3897,7 @@ png("${dirK}/${PCA_out}_PCA_plot_CEU_reference.png")
 plot_CEU6 + geom_rect(data=rect_CEU6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
 dev.off()
 
-ptions(bitmapType='cairo')
+options(bitmapType='cairo')i
 library(ggplot2)
 
 #write out study outlier just for record keeping, may as well exclude 1000G samples
@@ -3940,119 +3965,118 @@ dev.off()
 #####################################################################
  #Big plots not very good for seeing within study differences so spin off per GWAS plots
 
- subset(PCA_ALL,!(PCA_ALL\$GROUP %in% c("AMFS_case", "AMFS_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "HEIDELBERG_case", "HEIDELBERG_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls", "QMEGA_omni_case","SDH_control")))->PCA_610k
+# subset(PCA_ALL,!(PCA_ALL\$GROUP %in% c("AMFS_case", "AMFS_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "HEIDELBERG_case", "HEIDELBERG_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls", "QMEGA_omni_case","SDH_control")))->PCA_610k
+#plot_NW6_610k<-qplot(PC1,PC2,data=PCA_610k,colour=GROUP,main="QMEGA_610k vs. 1KG, bounded on CEU+GBR+FIN, 6sd")
+#plot_NW3_610k<-qplot(PC1,PC2,data=PCA_610k,colour=GROUP,main="QMEGA_610k vs. 1KG, bounded on CEU+GBR+FIN, 3sd")
+#plot_NW2_610k<-qplot(PC1,PC2,data=PCA_610k,colour=GROUP,main="QMEGA_610k vs. 1KG, bounded on CEU+GBR+FIN, 2sd")
+#plot_GBR6_610k<-qplot(PC1,PC2,data=PCA_610k,colour=GROUP,main="QMEGA_610k vs. 1KG, bounded on GBR, 6sd")
+#plot_CEU6_610k<-qplot(PC1,PC2,data=PCA_610k,colour=GROUP,main="QMEGA_610k vs. 1KG, bounded on CEU, 6sd")
 
-plot_NW6_610k<-qplot(PC1,PC2,data=PCA_610k,colour=GROUP,main="QMEGA_610k vs. 1KG, bounded on CEU+GBR+FIN, 6sd")
-plot_NW3_610k<-qplot(PC1,PC2,data=PCA_610k,colour=GROUP,main="QMEGA_610k vs. 1KG, bounded on CEU+GBR+FIN, 3sd")
-plot_NW2_610k<-qplot(PC1,PC2,data=PCA_610k,colour=GROUP,main="QMEGA_610k vs. 1KG, bounded on CEU+GBR+FIN, 2sd")
-plot_GBR6_610k<-qplot(PC1,PC2,data=PCA_610k,colour=GROUP,main="QMEGA_610k vs. 1KG, bounded on GBR, 6sd")
-plot_CEU6_610k<-qplot(PC1,PC2,data=PCA_610k,colour=GROUP,main="QMEGA_610k vs. 1KG, bounded on CEU, 6sd")
+##at the moment only plot 6 and 3 NW
+##NW outliers, 6SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_610k.png")
+#plot_NW6_610k + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#at the moment only plot 6 and 3 NW
-#NW outliers, 6SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_610k.png")
-plot_NW6_610k + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##NW outliers, 3SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_610k.png")
+#plot_NW6_610k + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#NW outliers, 3SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_610k.png")
-plot_NW6_610k + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+ #subset(PCA_ALL,!(PCA_ALL\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "HEIDELBERG_case", "HEIDELBERG_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls", "QMEGA_omni_case","SDH_control")))->PCA_AMFS
 
- subset(PCA_ALL,!(PCA_ALL\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "HEIDELBERG_case", "HEIDELBERG_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls", "QMEGA_omni_case","SDH_control")))->PCA_AMFS
+#plot_NW6_AMFS<-qplot(PC1,PC2,data=PCA_AMFS,colour=GROUP,main="AMFS vs. 1KG, bounded on CEU+GBR+FIN, 6sd")
+#plot_NW3_AMFS<-qplot(PC1,PC2,data=PCA_AMFS,colour=GROUP,main="AMFS vs. 1KG, bounded on CEU+GBR+FIN, 3sd")
+#plot_NW2_AMFS<-qplot(PC1,PC2,data=PCA_AMFS,colour=GROUP,main="AMFS vs. 1KG, bounded on CEU+GBR+FIN, 2sd")
+#plot_GBR6_AMFS<-qplot(PC1,PC2,data=PCA_AMFS,colour=GROUP,main="AMFS vs. 1KG, bounded on GBR, 6sd")
+#plot_CEU6_AMFS<-qplot(PC1,PC2,data=PCA_AMFS,colour=GROUP,main="AMFS vs. 1KG, bounded on CEU, 6sd")
 
-plot_NW6_AMFS<-qplot(PC1,PC2,data=PCA_AMFS,colour=GROUP,main="AMFS vs. 1KG, bounded on CEU+GBR+FIN, 6sd")
-plot_NW3_AMFS<-qplot(PC1,PC2,data=PCA_AMFS,colour=GROUP,main="AMFS vs. 1KG, bounded on CEU+GBR+FIN, 3sd")
-plot_NW2_AMFS<-qplot(PC1,PC2,data=PCA_AMFS,colour=GROUP,main="AMFS vs. 1KG, bounded on CEU+GBR+FIN, 2sd")
-plot_GBR6_AMFS<-qplot(PC1,PC2,data=PCA_AMFS,colour=GROUP,main="AMFS vs. 1KG, bounded on GBR, 6sd")
-plot_CEU6_AMFS<-qplot(PC1,PC2,data=PCA_AMFS,colour=GROUP,main="AMFS vs. 1KG, bounded on CEU, 6sd")
+##at the moment only plot 6 and 3 NW
+##NW outliers, 6SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_AMFS.png")
+#plot_NW6_AMFS + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#at the moment only plot 6 and 3 NW
-#NW outliers, 6SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_AMFS.png")
-plot_NW6_AMFS + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##NW outliers, 3SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_AMFS.png")
+#plot_NW6_AMFS + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#NW outliers, 3SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_AMFS.png")
-plot_NW6_AMFS + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+ #subset(PCA_ALL,!(PCA_ALL\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "AMFS_case", "AMFS_control", "HEIDELBERG_case", "HEIDELBERG_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls", "QMEGA_omni_case","SDH_control")))->PCA_EPIGENE_QTWIN
 
- subset(PCA_ALL,!(PCA_ALL\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "AMFS_case", "AMFS_control", "HEIDELBERG_case", "HEIDELBERG_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls", "QMEGA_omni_case","SDH_control")))->PCA_EPIGENE_QTWIN
+#plot_NW6_EPIGENE_QTWIN<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG, bounded on CEU+GBR+FIN, 6sd")
+#plot_NW3_EPIGENE_QTWIN<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG, bounded on CEU+GBR+FIN, 3sd")
+#plot_NW2_EPIGENE_QTWIN<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG, bounded on CEU+GBR+FIN, 2sd")
+#plot_GBR6_EPIGENE_QTWIN<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG, bounded on GBR, 6sd")
+#plot_CEU6_EPIGENE_QTWIN<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG, bounded on CEU, 6sd")
 
-plot_NW6_EPIGENE_QTWIN<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG, bounded on CEU+GBR+FIN, 6sd")
-plot_NW3_EPIGENE_QTWIN<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG, bounded on CEU+GBR+FIN, 3sd")
-plot_NW2_EPIGENE_QTWIN<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG, bounded on CEU+GBR+FIN, 2sd")
-plot_GBR6_EPIGENE_QTWIN<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG, bounded on GBR, 6sd")
-plot_CEU6_EPIGENE_QTWIN<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG, bounded on CEU, 6sd")
+##at the moment only plot 6 and 3 NW
+##NW outliers, 6SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_EPIGENE_QTWIN.png")
+#plot_NW6_EPIGENE_QTWIN + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#at the moment only plot 6 and 3 NW
-#NW outliers, 6SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_EPIGENE_QTWIN.png")
-plot_NW6_EPIGENE_QTWIN + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##NW outliers, 3SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_EPIGENE_QTWIN.png")
+#plot_NW6_EPIGENE_QTWIN + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#NW outliers, 3SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_EPIGENE_QTWIN.png")
-plot_NW6_EPIGENE_QTWIN + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+ #subset(PCA_ALL,!(PCA_ALL\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "AMFS_case", "AMFS_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls", "QMEGA_omni_case","SDH_control")))->PCA_HEI
 
- subset(PCA_ALL,!(PCA_ALL\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "AMFS_case", "AMFS_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls", "QMEGA_omni_case","SDH_control")))->PCA_HEI
+#plot_NW6_HEI<-qplot(PC1,PC2,data=PCA_HEI,colour=GROUP,main="HEIDELBERG vs. 1KG, bounded on CEU+GBR+FIN, 6sd")
+#plot_NW3_HEI<-qplot(PC1,PC2,data=PCA_HEI,colour=GROUP,main="HEIDELBERG vs. 1KG, bounded on CEU+GBR+FIN, 3sd")
+#plot_NW2_HEI<-qplot(PC1,PC2,data=PCA_HEI,colour=GROUP,main="HEIDELBERG vs. 1KG, bounded on CEU+GBR+FIN, 2sd")
+#plot_GBR6_HEI<-qplot(PC1,PC2,data=PCA_HEI,colour=GROUP,main="HEIDELBERG vs. 1KG, bounded on GBR, 6sd")
+#plot_CEU6_HEI<-qplot(PC1,PC2,data=PCA_HEI,colour=GROUP,main="HEIDELBERG vs. 1KG, bounded on CEU, 6sd")
 
-plot_NW6_HEI<-qplot(PC1,PC2,data=PCA_HEI,colour=GROUP,main="HEIDELBERG vs. 1KG, bounded on CEU+GBR+FIN, 6sd")
-plot_NW3_HEI<-qplot(PC1,PC2,data=PCA_HEI,colour=GROUP,main="HEIDELBERG vs. 1KG, bounded on CEU+GBR+FIN, 3sd")
-plot_NW2_HEI<-qplot(PC1,PC2,data=PCA_HEI,colour=GROUP,main="HEIDELBERG vs. 1KG, bounded on CEU+GBR+FIN, 2sd")
-plot_GBR6_HEI<-qplot(PC1,PC2,data=PCA_HEI,colour=GROUP,main="HEIDELBERG vs. 1KG, bounded on GBR, 6sd")
-plot_CEU6_HEI<-qplot(PC1,PC2,data=PCA_HEI,colour=GROUP,main="HEIDELBERG vs. 1KG, bounded on CEU, 6sd")
+##at the moment only plot 6 and 3 NW
+##NW outliers, 6SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_HEI.png")
+#plot_NW6_HEI + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#at the moment only plot 6 and 3 NW
-#NW outliers, 6SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_HEI.png")
-plot_NW6_HEI + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##NW outliers, 3SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_HEI.png")
+#plot_NW6_HEI + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#NW outliers, 3SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_HEI.png")
-plot_NW6_HEI + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+ #subset(PCA_ALL,!(PCA_ALL\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "AMFS_case", "AMFS_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "HEIDELBERG_case", "HEIDELBERG_control", "QMEGA_omni_case","SDH_control")))->PCA_WAMHS
 
- subset(PCA_ALL,!(PCA_ALL\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "AMFS_case", "AMFS_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "HEIDELBERG_case", "HEIDELBERG_control", "QMEGA_omni_case","SDH_control")))->PCA_WAMHS
+#plot_NW6_WAMHS<-qplot(PC1,PC2,data=PCA_WAMHS,colour=GROUP,main="WAMHS vs. 1KG, bounded on CEU+GBR+FIN, 6sd")
+#plot_NW3_WAMHS<-qplot(PC1,PC2,data=PCA_WAMHS,colour=GROUP,main="WAMHS vs. 1KG, bounded on CEU+GBR+FIN, 3sd")
+#plot_NW2_WAMHS<-qplot(PC1,PC2,data=PCA_WAMHS,colour=GROUP,main="WAMHS vs. 1KG, bounded on CEU+GBR+FIN, 2sd")
+#plot_GBR6_WAMHS<-qplot(PC1,PC2,data=PCA_WAMHS,colour=GROUP,main="WAMHS vs. 1KG, bounded on GBR, 6sd")
+#plot_CEU6_WAMHS<-qplot(PC1,PC2,data=PCA_WAMHS,colour=GROUP,main="WAMHS vs. 1KG, bounded on CEU, 6sd")
 
-plot_NW6_WAMHS<-qplot(PC1,PC2,data=PCA_WAMHS,colour=GROUP,main="WAMHS vs. 1KG, bounded on CEU+GBR+FIN, 6sd")
-plot_NW3_WAMHS<-qplot(PC1,PC2,data=PCA_WAMHS,colour=GROUP,main="WAMHS vs. 1KG, bounded on CEU+GBR+FIN, 3sd")
-plot_NW2_WAMHS<-qplot(PC1,PC2,data=PCA_WAMHS,colour=GROUP,main="WAMHS vs. 1KG, bounded on CEU+GBR+FIN, 2sd")
-plot_GBR6_WAMHS<-qplot(PC1,PC2,data=PCA_WAMHS,colour=GROUP,main="WAMHS vs. 1KG, bounded on GBR, 6sd")
-plot_CEU6_WAMHS<-qplot(PC1,PC2,data=PCA_WAMHS,colour=GROUP,main="WAMHS vs. 1KG, bounded on CEU, 6sd")
+##at the moment only plot 6 and 3 NW
+##NW outliers, 6SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_WAMHS.png")
+#plot_NW6_WAMHS + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#at the moment only plot 6 and 3 NW
-#NW outliers, 6SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_WAMHS.png")
-plot_NW6_WAMHS + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##NW outliers, 3SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_WAMHS.png")
+#plot_NW6_WAMHS + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#NW outliers, 3SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_WAMHS.png")
-plot_NW6_WAMHS + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+ #subset(PCA_ALL,!(PCA_ALL\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "AMFS_case", "AMFS_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "HEIDELBERG_case", "HEIDELBERG_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls")))->PCA_QMEGA_omni
 
- subset(PCA_ALL,!(PCA_ALL\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "AMFS_case", "AMFS_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "HEIDELBERG_case", "HEIDELBERG_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls")))->PCA_QMEGA_omni
+#plot_NW6_QMEGA_omni<-qplot(PC1,PC2,data=PCA_QMEGA_omni,colour=GROUP,main="QMEGA_omni vs. 1KG, bounded on CEU+GBR+FIN, 6sd")
+#plot_NW3_QMEGA_omni<-qplot(PC1,PC2,data=PCA_QMEGA_omni,colour=GROUP,main="QMEGA_omni vs. 1KG, bounded on CEU+GBR+FIN, 3sd")
+#plot_NW2_QMEGA_omni<-qplot(PC1,PC2,data=PCA_QMEGA_omni,colour=GROUP,main="QMEGA_omni vs. 1KG, bounded on CEU+GBR+FIN, 2sd")
+#plot_GBR6_QMEGA_omni<-qplot(PC1,PC2,data=PCA_QMEGA_omni,colour=GROUP,main="QMEGA_omni vs. 1KG, bounded on GBR, 6sd")
+#plot_CEU6_QMEGA_omni<-qplot(PC1,PC2,data=PCA_QMEGA_omni,colour=GROUP,main="QMEGA_omni vs. 1KG, bounded on CEU, 6sd")
 
-plot_NW6_QMEGA_omni<-qplot(PC1,PC2,data=PCA_QMEGA_omni,colour=GROUP,main="QMEGA_omni vs. 1KG, bounded on CEU+GBR+FIN, 6sd")
-plot_NW3_QMEGA_omni<-qplot(PC1,PC2,data=PCA_QMEGA_omni,colour=GROUP,main="QMEGA_omni vs. 1KG, bounded on CEU+GBR+FIN, 3sd")
-plot_NW2_QMEGA_omni<-qplot(PC1,PC2,data=PCA_QMEGA_omni,colour=GROUP,main="QMEGA_omni vs. 1KG, bounded on CEU+GBR+FIN, 2sd")
-plot_GBR6_QMEGA_omni<-qplot(PC1,PC2,data=PCA_QMEGA_omni,colour=GROUP,main="QMEGA_omni vs. 1KG, bounded on GBR, 6sd")
-plot_CEU6_QMEGA_omni<-qplot(PC1,PC2,data=PCA_QMEGA_omni,colour=GROUP,main="QMEGA_omni vs. 1KG, bounded on CEU, 6sd")
+##at the moment only plot 6 and 3 NW
+##NW outliers, 6SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_QMEGA_omni.png")
+#plot_NW6_QMEGA_omni + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#at the moment only plot 6 and 3 NW
-#NW outliers, 6SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_QMEGA_omni.png")
-plot_NW6_QMEGA_omni + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
-
-#NW outliers, 3SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_QMEGA_omni.png")
-plot_NW6_QMEGA_omni + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##NW outliers, 3SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_QMEGA_omni.png")
+#plot_NW6_QMEGA_omni + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
 
 #####################################################################
@@ -4060,119 +4084,119 @@ dev.off()
 #####################################################################
  #Big plots not very good for seeing within study differences to spin of per GWAS plots - agin for EUR set
 
- subset(PCA_EUR,!(PCA_EUR\$GROUP %in% c("AMFS_case", "AMFS_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "HEIDELBERG_case", "HEIDELBERG_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls", "QMEGA_omni_case","SDH_control")))->PCA_EUR_610k
+ #subset(PCA_EUR,!(PCA_EUR\$GROUP %in% c("AMFS_case", "AMFS_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "HEIDELBERG_case", "HEIDELBERG_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls", "QMEGA_omni_case","SDH_control")))->PCA_EUR_610k
 
-plot_NW6_610k_EUR<-qplot(PC1,PC2,data=PCA_EUR_610k,colour=GROUP,main="QMEGA_610k vs. 1KG EUR, bounded on CEU+GBR+FIN, 6sd")
-plot_NW3_610k_EUR<-qplot(PC1,PC2,data=PCA_EUR_610k,colour=GROUP,main="QMEGA_610k vs. 1KG EUR, bounded on CEU+GBR+FIN, 3sd")
-plot_NW2_610k_EUR<-qplot(PC1,PC2,data=PCA_EUR_610k,colour=GROUP,main="QMEGA_610k vs. 1KG EUR, bounded on CEU+GBR+FIN, 2sd")
-plot_GBR6_610k_EUR<-qplot(PC1,PC2,data=PCA_EUR_610k,colour=GROUP,main="QMEGA_610k vs. 1KG EUR, bounded on GBR, 6sd")
-plot_CEU6_610k_EUR<-qplot(PC1,PC2,data=PCA_EUR_610k,colour=GROUP,main="QMEGA_610k vs. 1KG EUR, bounded on CEU, 6sd")
+#plot_NW6_610k_EUR<-qplot(PC1,PC2,data=PCA_EUR_610k,colour=GROUP,main="QMEGA_610k vs. 1KG EUR, bounded on CEU+GBR+FIN, 6sd")
+#plot_NW3_610k_EUR<-qplot(PC1,PC2,data=PCA_EUR_610k,colour=GROUP,main="QMEGA_610k vs. 1KG EUR, bounded on CEU+GBR+FIN, 3sd")
+#plot_NW2_610k_EUR<-qplot(PC1,PC2,data=PCA_EUR_610k,colour=GROUP,main="QMEGA_610k vs. 1KG EUR, bounded on CEU+GBR+FIN, 2sd")
+#plot_GBR6_610k_EUR<-qplot(PC1,PC2,data=PCA_EUR_610k,colour=GROUP,main="QMEGA_610k vs. 1KG EUR, bounded on GBR, 6sd")
+#plot_CEU6_610k_EUR<-qplot(PC1,PC2,data=PCA_EUR_610k,colour=GROUP,main="QMEGA_610k vs. 1KG EUR, bounded on CEU, 6sd")
 
-#at the moment only plot 6 and 3 NW
-#NW outliers, 6SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_610k_EUR.png")
-plot_NW6_610k_EUR + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##at the moment only plot 6 and 3 NW
+##NW outliers, 6SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_610k_EUR.png")
+#plot_NW6_610k_EUR + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#NW outliers, 3SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_610k_EUR.png")
-plot_NW6_610k_EUR + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##NW outliers, 3SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_610k_EUR.png")
+#plot_NW6_610k_EUR + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
- subset(PCA_EUR,!(PCA_EUR\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "HEIDELBERG_case", "HEIDELBERG_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls", "QMEGA_omni_case","SDH_control")))->PCA_EUR_AMFS
+ #subset(PCA_EUR,!(PCA_EUR\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "HEIDELBERG_case", "HEIDELBERG_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls", "QMEGA_omni_case","SDH_control")))->PCA_EUR_AMFS
 
-plot_NW6_AMFS_EUR<-qplot(PC1,PC2,data=PCA_EUR_AMFS,colour=GROUP,main="AMFS vs. 1KG EUR, bounded on CEU+GBR+FIN, 6sd")
-plot_NW3_AMFS_EUR<-qplot(PC1,PC2,data=PCA_EUR_AMFS,colour=GROUP,main="AMFS vs. 1KG EUR, bounded on CEU+GBR+FIN, 3sd")
-plot_NW2_AMFS_EUR<-qplot(PC1,PC2,data=PCA_EUR_AMFS,colour=GROUP,main="AMFS vs. 1KG EUR, bounded on CEU+GBR+FIN, 2sd")
-plot_GBR6_AMFS_EUR<-qplot(PC1,PC2,data=PCA_EUR_AMFS,colour=GROUP,main="AMFS vs. 1KG EUR, bounded on GBR, 6sd")
-plot_CEU6_AMFS_EUR<-qplot(PC1,PC2,data=PCA_EUR_AMFS,colour=GROUP,main="AMFS vs. 1KG EUR, bounded on CEU, 6sd")
+#plot_NW6_AMFS_EUR<-qplot(PC1,PC2,data=PCA_EUR_AMFS,colour=GROUP,main="AMFS vs. 1KG EUR, bounded on CEU+GBR+FIN, 6sd")
+#plot_NW3_AMFS_EUR<-qplot(PC1,PC2,data=PCA_EUR_AMFS,colour=GROUP,main="AMFS vs. 1KG EUR, bounded on CEU+GBR+FIN, 3sd")
+#plot_NW2_AMFS_EUR<-qplot(PC1,PC2,data=PCA_EUR_AMFS,colour=GROUP,main="AMFS vs. 1KG EUR, bounded on CEU+GBR+FIN, 2sd")
+#plot_GBR6_AMFS_EUR<-qplot(PC1,PC2,data=PCA_EUR_AMFS,colour=GROUP,main="AMFS vs. 1KG EUR, bounded on GBR, 6sd")
+#plot_CEU6_AMFS_EUR<-qplot(PC1,PC2,data=PCA_EUR_AMFS,colour=GROUP,main="AMFS vs. 1KG EUR, bounded on CEU, 6sd")
 
-#at the moment only plot 6 and 3 NW
-#NW outliers, 6SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_AMFS_EUR.png")
-plot_NW6_AMFS_EUR + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##at the moment only plot 6 and 3 NW
+##NW outliers, 6SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_AMFS_EUR.png")
+#plot_NW6_AMFS_EUR + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#NW outliers, 3SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_AMFS_EUR.png")
-plot_NW6_AMFS_EUR + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##NW outliers, 3SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_AMFS_EUR.png")
+#plot_NW6_AMFS_EUR + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
- subset(PCA_EUR,!(PCA_EUR\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "AMFS_case", "AMFS_control", "HEIDELBERG_case", "HEIDELBERG_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls", "QMEGA_omni_case","SDH_control")))->PCA_EPIGENE_QTWIN_EUR
+ #subset(PCA_EUR,!(PCA_EUR\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "AMFS_case", "AMFS_control", "HEIDELBERG_case", "HEIDELBERG_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls", "QMEGA_omni_case","SDH_control")))->PCA_EPIGENE_QTWIN_EUR
 
-plot_NW6_EPIGENE_QTWIN_EUR<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN_EUR,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG EUR, bounded on CEU+GBR+FIN, 6sd")
-plot_NW3_EPIGENE_QTWIN_EUR<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN_EUR,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG EUR, bounded on CEU+GBR+FIN, 3sd")
-plot_NW2_EPIGENE_QTWIN_EUR<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN_EUR,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG EUR, bounded on CEU+GBR+FIN, 2sd")
-plot_GBR6_EPIGENE_QTWIN_EUR<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN_EUR,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG EUR, bounded on GBR, 6sd")
-plot_CEU6_EPIGENE_QTWIN_EUR<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN_EUR,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG EUR, bounded on CEU, 6sd")
-m=c(0,0.5)
-#at the moment only plot 6 and 3 NW
-#NW outliers, 6SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_EPIGENE_QTWIN_EUR.png")
-plot_NW6_EPIGENE_QTWIN_EUR + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+#plot_NW6_EPIGENE_QTWIN_EUR<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN_EUR,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG EUR, bounded on CEU+GBR+FIN, 6sd")
+#plot_NW3_EPIGENE_QTWIN_EUR<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN_EUR,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG EUR, bounded on CEU+GBR+FIN, 3sd")
+#plot_NW2_EPIGENE_QTWIN_EUR<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN_EUR,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG EUR, bounded on CEU+GBR+FIN, 2sd")
+#plot_GBR6_EPIGENE_QTWIN_EUR<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN_EUR,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG EUR, bounded on GBR, 6sd")
+#plot_CEU6_EPIGENE_QTWIN_EUR<-qplot(PC1,PC2,data=PCA_EPIGENE_QTWIN_EUR,colour=GROUP,main="EPIGENE_QTWIN vs. 1KG EUR, bounded on CEU, 6sd")
+#m=c(0,0.5)
+##at the moment only plot 6 and 3 NW
+##NW outliers, 6SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_EPIGENE_QTWIN_EUR.png")
+#plot_NW6_EPIGENE_QTWIN_EUR + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#NW outliers, 3SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_EPIGENE_QTWIN_EUR.png")
-plot_NW6_EPIGENE_QTWIN_EUR + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##NW outliers, 3SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_EPIGENE_QTWIN_EUR.png")
+#plot_NW6_EPIGENE_QTWIN_EUR + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
- subset(PCA_EUR,!(PCA_EUR\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "AMFS_case", "AMFS_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls", "QMEGA_omni_case","SDH_control")))->PCA_HEI_EUR
+ #subset(PCA_EUR,!(PCA_EUR\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "AMFS_case", "AMFS_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls", "QMEGA_omni_case","SDH_control")))->PCA_HEI_EUR
 
-plot_NW6_HEI_EUR<-qplot(PC1,PC2,data=PCA_HEI_EUR,colour=GROUP,main="HEIDELBERG vs. 1KG EUR, bounded on CEU+GBR+FIN, 6sd")
-plot_NW3_HEI_EUR<-qplot(PC1,PC2,data=PCA_HEI_EUR,colour=GROUP,main="HEIDELBERG vs. 1KG EUR, bounded on CEU+GBR+FIN, 3sd")
-plot_NW2_HEI_EUR<-qplot(PC1,PC2,data=PCA_HEI_EUR,colour=GROUP,main="HEIDELBERG vs. 1KG EUR, bounded on CEU+GBR+FIN, 2sd")
-plot_GBR6_HEI_EUR<-qplot(PC1,PC2,data=PCA_HEI_EUR,colour=GROUP,main="HEIDELBERG vs. 1KG EUR, bounded on GBR, 6sd")
-plot_CEU6_HEI_EUR<-qplot(PC1,PC2,data=PCA_HEI_EUR,colour=GROUP,main="HEIDELBERG vs. 1KG EUR, bounded on CEU, 6sd")
+#plot_NW6_HEI_EUR<-qplot(PC1,PC2,data=PCA_HEI_EUR,colour=GROUP,main="HEIDELBERG vs. 1KG EUR, bounded on CEU+GBR+FIN, 6sd")
+#plot_NW3_HEI_EUR<-qplot(PC1,PC2,data=PCA_HEI_EUR,colour=GROUP,main="HEIDELBERG vs. 1KG EUR, bounded on CEU+GBR+FIN, 3sd")
+#plot_NW2_HEI_EUR<-qplot(PC1,PC2,data=PCA_HEI_EUR,colour=GROUP,main="HEIDELBERG vs. 1KG EUR, bounded on CEU+GBR+FIN, 2sd")
+#plot_GBR6_HEI_EUR<-qplot(PC1,PC2,data=PCA_HEI_EUR,colour=GROUP,main="HEIDELBERG vs. 1KG EUR, bounded on GBR, 6sd")
+#plot_CEU6_HEI_EUR<-qplot(PC1,PC2,data=PCA_HEI_EUR,colour=GROUP,main="HEIDELBERG vs. 1KG EUR, bounded on CEU, 6sd")
 
-#at the moment only plot 6 and 3 NW
-#NW outliers, 6SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_HEI_EUR.png")
-plot_NW6_HEI_EUR + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##at the moment only plot 6 and 3 NW
+##NW outliers, 6SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_HEI_EUR.png")
+#plot_NW6_HEI_EUR + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#NW outliers, 3SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_HEI_EUR.png")
-plot_NW6_HEI_EUR + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##NW outliers, 3SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_HEI_EUR.png")
+#plot_NW6_HEI_EUR + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
- subset(PCA_EUR,!(PCA_EUR\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "AMFS_case", "AMFS_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "HEIDELBERG_case", "HEIDELBERG_control", "QMEGA_omni_case","SDH_control")))->PCA_WAMHS_EUR
+ #subset(PCA_EUR,!(PCA_EUR\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "AMFS_case", "AMFS_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "HEIDELBERG_case", "HEIDELBERG_control", "QMEGA_omni_case","SDH_control")))->PCA_WAMHS_EUR
 
-plot_NW6_WAMHS_EUR<-qplot(PC1,PC2,data=PCA_WAMHS_EUR,colour=GROUP,main="WAMHS vs. 1KG EUR, bounded on CEU+GBR+FIN, 6sd")
-plot_NW3_WAMHS_EUR<-qplot(PC1,PC2,data=PCA_WAMHS_EUR,colour=GROUP,main="WAMHS vs. 1KG EUR, bounded on CEU+GBR+FIN, 3sd")
-plot_NW2_WAMHS_EUR<-qplot(PC1,PC2,data=PCA_WAMHS_EUR,colour=GROUP,main="WAMHS vs. 1KG EUR, bounded on CEU+GBR+FIN, 2sd")
-plot_GBR6_WAMHS_EUR<-qplot(PC1,PC2,data=PCA_WAMHS_EUR,colour=GROUP,main="WAMHS vs. 1KG EUR, bounded on GBR, 6sd")
-plot_CEU6_WAMHS_EUR<-qplot(PC1,PC2,data=PCA_WAMHS_EUR,colour=GROUP,main="WAMHS vs. 1KG EUR, bounded on CEU, 6sd")
+#plot_NW6_WAMHS_EUR<-qplot(PC1,PC2,data=PCA_WAMHS_EUR,colour=GROUP,main="WAMHS vs. 1KG EUR, bounded on CEU+GBR+FIN, 6sd")
+#plot_NW3_WAMHS_EUR<-qplot(PC1,PC2,data=PCA_WAMHS_EUR,colour=GROUP,main="WAMHS vs. 1KG EUR, bounded on CEU+GBR+FIN, 3sd")
+#plot_NW2_WAMHS_EUR<-qplot(PC1,PC2,data=PCA_WAMHS_EUR,colour=GROUP,main="WAMHS vs. 1KG EUR, bounded on CEU+GBR+FIN, 2sd")
+#plot_GBR6_WAMHS_EUR<-qplot(PC1,PC2,data=PCA_WAMHS_EUR,colour=GROUP,main="WAMHS vs. 1KG EUR, bounded on GBR, 6sd")
+#plot_CEU6_WAMHS_EUR<-qplot(PC1,PC2,data=PCA_WAMHS_EUR,colour=GROUP,main="WAMHS vs. 1KG EUR, bounded on CEU, 6sd")
 
-#at the moment only plot 6 and 3 NW
-#NW outliers, 6SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_WAMHS_EUR.png")
-plot_NW6_WAMHS_EUR + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##at the moment only plot 6 and 3 NW
+##NW outliers, 6SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_WAMHS_EUR.png")
+#plot_NW6_WAMHS_EUR + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#NW outliers, 3SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_WAMHS_EUR.png")
-plot_NW6_WAMHS_EUR + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##NW outliers, 3SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_WAMHS_EUR.png")
+#plot_NW6_WAMHS_EUR + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
- subset(PCA_EUR,!(PCA_EUR\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "AMFS_case", "AMFS_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "HEIDELBERG_case", "HEIDELBERG_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls")))->PCA_QMEGA_omni_EUR
+ #subset(PCA_EUR,!(PCA_EUR\$GROUP %in% c("QMEGA_610k_case","610k_QTWIN_control", "ENDO_control", "AMFS_case", "AMFS_control", "EPIGENE_QTWIN_case", "EPIGENE_QTWIN_control", "HEIDELBERG_case", "HEIDELBERG_control", "WAMHS_OAG_IBD_case", "IBD_controls", "OAG1_controls", "OAG2_controls")))->PCA_QMEGA_omni_EUR
 
-plot_NW6_QMEGA_omni_EUR<-qplot(PC1,PC2,data=PCA_QMEGA_omni_EUR,colour=GROUP,main="QMEGA_omni vs. 1KG EUR, bounded on CEU+GBR+FIN, 6sd")
-plot_NW3_QMEGA_omni_EUR<-qplot(PC1,PC2,data=PCA_QMEGA_omni_EUR,colour=GROUP,main="QMEGA_omni vs. 1KG EUR, bounded on CEU+GBR+FIN, 3sd")
-plot_NW2_QMEGA_omni_EUR<-qplot(PC1,PC2,data=PCA_QMEGA_omni_EUR,colour=GROUP,main="QMEGA_omni vs. 1KG EUR, bounded on CEU+GBR+FIN, 2sd")
-plot_GBR6_QMEGA_omni_EUR<-qplot(PC1,PC2,data=PCA_QMEGA_omni_EUR,colour=GROUP,main="QMEGA_omni vs. 1KG EUR, bounded on GBR, 6sd")
-plot_CEU6_QMEGA_omni_EUR<-qplot(PC1,PC2,data=PCA_QMEGA_omni_EUR,colour=GROUP,main="QMEGA_omni vs. 1KG EUR, bounded on CEU, 6sd")
+#plot_NW6_QMEGA_omni_EUR<-qplot(PC1,PC2,data=PCA_QMEGA_omni_EUR,colour=GROUP,main="QMEGA_omni vs. 1KG EUR, bounded on CEU+GBR+FIN, 6sd")
+#plot_NW3_QMEGA_omni_EUR<-qplot(PC1,PC2,data=PCA_QMEGA_omni_EUR,colour=GROUP,main="QMEGA_omni vs. 1KG EUR, bounded on CEU+GBR+FIN, 3sd")
+#plot_NW2_QMEGA_omni_EUR<-qplot(PC1,PC2,data=PCA_QMEGA_omni_EUR,colour=GROUP,main="QMEGA_omni vs. 1KG EUR, bounded on CEU+GBR+FIN, 2sd")
+#plot_GBR6_QMEGA_omni_EUR<-qplot(PC1,PC2,data=PCA_QMEGA_omni_EUR,colour=GROUP,main="QMEGA_omni vs. 1KG EUR, bounded on GBR, 6sd")
+#plot_CEU6_QMEGA_omni_EUR<-qplot(PC1,PC2,data=PCA_QMEGA_omni_EUR,colour=GROUP,main="QMEGA_omni vs. 1KG EUR, bounded on CEU, 6sd")
 
-#at the moment only plot 6 and 3 NW
-#NW outliers, 6SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_QMEGA_omni_EUR.png")
-plot_NW6_QMEGA_omni_EUR + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##at the moment only plot 6 and 3 NW
+##NW outliers, 6SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_QMEGA_omni_EUR.png")
+#plot_NW6_QMEGA_omni_EUR + geom_rect(data=rect_NW6,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
-#NW outliers, 3SD
-png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_QMEGA_omni_EUR.png")
-plot_NW6_QMEGA_omni_EUR + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
-dev.off()
+##NW outliers, 3SD
+#png("${dirK}/${PCA_out}_PCA_plot_NW_reference_3sd_QMEGA_omni_EUR.png")
+#plot_NW6_QMEGA_omni_EUR + geom_rect(data=rect_NW3,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax), color="grey20", alpha=0.5, inherit.aes = FALSE)
+#dev.off()
 
 
 #################################
@@ -4320,12 +4344,12 @@ EOF
     #                    0                     1                    88  <<there is one extreme WAMHS outlier form EUR - Australian Aboriginal
 
   #in the breslow work, and after a bunch of back of forth using 3sd NW; Stuart thinks could easily use 6sd so it makes little difference, other than not having papers with different requirements, so use 3sd
-  echo -e "\nUsing NW group (GBR_CEU_FIN_) 3sd to determine non EUR samples\n"
-  wc -l ${dirK}/${PCA_out}_GBR_CEU_FIN_outlier_3sd.txt
+  echo -e "\nUsing NW group (GBR_CEU_FIN_) 6sd to determine non EUR samples\n"
+  wc -l ${dirK}/${PCA_out}_GBR_CEU_FIN_outlier_6sd.txt
   #86 /working/lab_stuartma/scratch/matthewL/melanoma_meta_analysis/cleaned/Melanoma_clean_2016_merged_GBR_CEU_FIN_outlier_3sd.tx
 
   echo -e "\nPerforming IBD\n"
-  plink_1.90 --threads 1 --bfile ${dirI}/temp_merge_pruned --genome --min 0.1 --out ${dirI}/temp_merge_pruned --silent
+  plink_1.90 --bfile ${dirI}/temp_merge_pruned --genome --min 0.1 --out ${dirI}/temp_merge_pruned --silent
   echo -e "\nIBD checks complete...\n"
   wc -l ${dirI}/temp_merge_pruned.genome
      #604
