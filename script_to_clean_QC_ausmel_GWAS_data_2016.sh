@@ -4358,156 +4358,65 @@ EOF
   #look for anything weird - someone related to lots of people - manually filter these to stop excess people being removed
   echo -e "\mDisplaying people in col1,2 who match mutliple other people at IBD > 0.15; manually will filter these\n"
   awk 'NR==FNR {a[$2];next} $2 in a' <(awk '$10>=0.15 {print $2}' ${dirI}/temp_merge_pruned.genome | sort | uniq -c | awk '$1>1') ${dirI}/temp_merge_pruned.genome
-    #  07MH01800H      07MH01800H            434         GACT2-2 UN    NA  0.1582  0.5249  0.3169  0.5794   0  0.857989  1.0000 16.0497 
-    #  07MH01800H      07MH01800H            498         GACT2-7 UN    NA  0.2917  0.4720  0.2363  0.4723   0  0.828706  1.0000  9.0363 <<
-    #  07MH01800H      07MH01800H            599        GACT2-26 UN    NA  0.7029  0.2971  0.0000  0.1486   0  0.740696  1.0000  3.0350
-    #         294     KH09_04_A12            302     KH09_04_B08 UN    NA  0.5536  0.4464  0.0000  0.2232   1  0.756978  1.0000  3.9598
-    #         294     KH09_04_A12            729     KH09_08_H06 UN    NA  0.5205  0.4721  0.0073  0.2434   1  0.761943  1.0000  4.9183
-    #         358        GTas2-57            359        GTas2-68 UN    NA  0.7301  0.2699  0.0000  0.1350  -1  0.736608  1.0000  2.7730
-    #         358        GTas2-57            438        GTas2-19 UN    NA  0.7695  0.2276  0.0029  0.1167  -1  0.734006  1.0000  2.6833
-    #         358        GTas2-57            466        GTas2-21 UN    NA  0.6913  0.3000  0.0087  0.1587  -1  0.743575  1.0000  3.2247
-    #         358        GTas2-57            487         GTas2-5 UN    NA  0.0003  0.9916  0.0080  0.5039  -1  0.818770  1.0000      NA
-    #         358        GTas2-57            507        GTas2-53 UN    NA  0.2021  0.4994  0.2985  0.5482  -1  0.849829  1.0000 13.8641
-    #         358        GTas2-57            562        GIST2-23 UN    NA  0.5553  0.3622  0.0825  0.2636  -1  0.771889  1.0000  3.9950
-    #         358        GTas2-57            563        GIST2-55 UN    NA  0.4274  0.5566  0.0160  0.2943  -1  0.773673  1.0000  5.6023
-    #         359        GTas2-68            438        GTas2-19 UN    NA  0.7046  0.2869  0.0085  0.1519  -1  0.742088  1.0000  3.0160
-    #         359        GTas2-68            466        GTas2-21 UN    NA  0.7499  0.2370  0.0131  0.1316  -1  0.737991  1.0000  2.9140
-    #         359        GTas2-68            507        GTas2-53 UN    NA  0.7024  0.2870  0.0106  0.1541  -1  0.742720  1.0000  2.9495
-    #         359        GTas2-68            562        GIST2-23 UN    NA  0.7643  0.2275  0.0082  0.1219  -1  0.735520  1.0000  2.7761
-    #         360        GTas3-11            565        GIST3-13 UN    NA  0.2474  0.5556  0.1970  0.4748  -1  0.826357  1.0000 11.3704
-    #         360        GTas3-11         AG-323          AG-323 UN    NA  0.6440  0.3518  0.0042  0.1801  -1  0.747901  1.0000  3.3741
-    #         361         GTas4-4            362        GTas4-10 UN    NA  0.0013  0.9908  0.0080  0.5033  -1  0.818651  1.0000 1408.5000
-    #         361         GTas4-4            549        GTas4-30 UN    NA  0.3195  0.4524  0.2281  0.4543  -1  0.824170  1.0000  7.7585
-    #         361         GTas4-4            550        GTas4-34 UN    NA  0.7503  0.2462  0.0035  0.1266  -1  0.736194  1.0000  2.8720
-    #         361         GTas4-4            551        GTas4-41 UN    NA  0.5018  0.4872  0.0111  0.2547  -1  0.764674  1.0000  4.9225
-    #         361         GTas4-4            566        GIST4-16 UN    NA  0.2596  0.4400  0.3004  0.5204  -1  0.843926  1.0000 11.3043
-    #         361         GTas4-4         AG-324          AG-324 UN    NA  0.0003  0.9849  0.0148  0.5072  -1  0.819997  1.0000      NA
-    #         362        GTas4-10            549        GTas4-30 UN    NA  0.5989  0.3950  0.0061  0.2036  -1  0.753168  1.0000  3.5806
-    #         362        GTas4-10            551        GTas4-41 UN    NA  0.7396  0.2571  0.0033  0.1319  -1  0.737334  1.0000  2.8939
-    #         362        GTas4-10            566        GIST4-16 UN    NA  0.4806  0.5108  0.0086  0.2640  -1  0.766534  1.0000  4.8115
-    #         362        GTas4-10         AG-324          AG-324 UN    NA  0.2320  0.4738  0.2942  0.5311  -1  0.845798  1.0000 12.8009
-    #         363        GTas12-2            439        GTas12-5 UN    NA  0.2170  0.5307  0.2522  0.5176  -1  0.839758  1.0000 11.5429
-    #         363        GTas12-2            567        GIST12-1 UN    NA  0.0006  0.9862  0.0132  0.5063  -1  0.819674  1.0000 2813.0000
-    #         366       GTas37-24            367       GTas37-29 UN    NA  0.2812  0.4918  0.2269  0.4729  -1  0.828138  1.0000  9.8085
-    #         366       GTas37-24            463       GTas417-1 UN    NA  0.7114  0.2765  0.0121  0.1503  -1  0.741999  1.0000  3.1799
-    #         366       GTas37-24         AG-332          AG-332 UN    NA  0.3845  0.6106  0.0049  0.3102  -1  0.776316  1.0000  6.1400
-    #         371        GTas53-1            372        GTas53-7 UN    NA  0.2803  0.4358  0.2839  0.5018  -1  0.838645  1.0000  8.8350
-    #         371        GTas53-1            373       GTas53-11 UN    NA  0.7642  0.2209  0.0150  0.1254  -1  0.736781  1.0000  2.7962
-    #         371        GTas53-1            488        GTas53-4 UN    NA  0.4917  0.5018  0.0065  0.2574  -1  0.764925  1.0000  5.2154
-    #         376        GTas73-1            377        GTas73-6 UN    NA  0.2561  0.4867  0.2572  0.5006  -1  0.836418  1.0000 10.8069
-    #         376        GTas73-1         AG-348          AG-348 UN    NA  0.2087  0.4545  0.3368  0.5640  -1  0.856112  1.0000 13.6150
-    #         382       GTas149-4            383       GTas149-7 UN    NA  0.2625  0.4949  0.2426  0.4901  -1  0.833045  1.0000 10.5602
-    #         382       GTas149-4         AG-370          AG-370 UN    NA  0.2184  0.4418  0.3398  0.5607  -1  0.855609  1.0000 12.8009
-    #         384       GTas156-1            449       GTas156-2 UN    NA  0.1924  0.5438  0.2638  0.5357  -1  0.844551  1.0000 13.3009
-    #         384       GTas156-1          E8382       E83820001 UN    NA  0.6730  0.3241  0.0029  0.1650  -1  0.744515  1.0000  3.1939
-    #         393       GTas230-6         AG-180          AG-180 UN    NA  0.4311  0.5654  0.0035  0.2862  -1  0.770989  1.0000  5.4978
-    #         393       GTas230-6         AG-392          AG-392 UN    NA  0.0006  0.9922  0.0071  0.5032  -1  0.818570  1.0000 1403.0000
-    #         397       GTas305-5            467       GTas305-2 UN    NA  0.4864  0.5136  0.0000  0.2568  -1  0.763491  1.0000  4.4954
-    #         397       GTas305-5         AG-419          AG-419 UN    NA  0.1842  0.5081  0.3077  0.5617  -1  0.853466  1.0000 15.0207
-    #         398      GTas309-10            489       GTas309-6 UN    NA  0.1862  0.5070  0.3067  0.5603  -1  0.853069  1.0000 15.5187
-    #         398      GTas309-10         AG-315          AG-315 UN    NA  0.1815  0.5365  0.2820  0.5503  -1  0.849068  1.0000 14.0000
-    #         427        Gvic1-37            435         Gvic1-8 UN    NA  0.4912  0.5007  0.0081  0.2585  -1  0.765286  1.0000  4.8235
-    #         427        Gvic1-37            506        GVic1-38 UN    NA  0.2496  0.4642  0.2863  0.5184  -1  0.842430  1.0000 11.5911
-    #         427        Gvic1-37            602        Gvic1-39 UN    NA  0.2786  0.4442  0.2773  0.4994  -1  0.837627  1.0000  9.8551
-    #         427        Gvic1-37            603        Gvic1-40 UN    NA  0.2602  0.4646  0.2752  0.5075  -1  0.839249  1.0000 10.7045
-    #         435         Gvic1-8            506        GVic1-38 UN    NA  0.3143  0.6857  0.0000  0.3429  -1  0.781722  1.0000  7.7380
-    #         435         Gvic1-8            602        Gvic1-39 UN    NA  0.5785  0.4150  0.0066  0.2140  -1  0.755487  1.0000  3.9570
-    #         435         Gvic1-8            603        Gvic1-40 UN    NA  0.0003  0.9893  0.0104  0.5050  -1  0.819202  1.0000 2817.0000
-    #         478          AG0318         AG-020          AG-020 UN    NA  0.2299  0.4551  0.3150  0.5425  -1  0.849817  1.0000 11.3730
-    #         478          AG0318         AG-063          AG-063 UN    NA  0.0000  1.0000  0.0000  0.5000  -1  0.816581  1.0000      NA
-    #     480.013         480.013        480.014         480.014 UN    NA  0.0000  0.0000  1.0000  1.0000  -1  1.000000  1.0000      NA
-    #     480.013         480.013          81470         8147001 UN    NA  0.0000  0.0000  1.0000  1.0000  -1  1.000000  1.0000      NA
-    #         506        GVic1-38            602        Gvic1-39 UN    NA  0.2325  0.4772  0.2903  0.5289  -1  0.845021  1.0000 11.7418
-    #         506        GVic1-38            603        Gvic1-40 UN    NA  0.1597  0.4510  0.3893  0.6148  -1  0.871035  1.0000 16.8427
-    #         507        GTas2-53            562        GIST2-23 UN    NA  0.5471  0.4045  0.0484  0.2506  -1  0.766538  1.0000  4.0906
-    #         507        GTas2-53            563        GIST2-55 UN    NA  0.0006  0.9791  0.0202  0.5098  -1  0.820963  1.0000      NA
-    #         549        GTas4-30            550        GTas4-34 UN    NA  0.6877  0.3066  0.0057  0.1590  -1  0.743421  1.0000  2.9048
-    #         549        GTas4-30            551        GTas4-41 UN    NA  0.6008  0.3902  0.0090  0.2041  -1  0.753489  1.0000  3.6827
-    #         549        GTas4-30            566        GIST4-16 UN    NA  0.1717  0.5168  0.3115  0.5699  -1  0.855519  1.0000 16.7874
-    #         549        GTas4-30         AG-324          AG-324 UN    NA  0.5256  0.4744  0.0000  0.2372  -1  0.759347  1.0000  4.1278
-    #     657.001         657.001          83800         8380003 UN    NA  0.0003  0.9972  0.0025  0.5011  -1  0.817752  1.0000 2770.0000
-    #     657.001         657.001          83800         8380004 UN    NA  0.0003  0.9840  0.0156  0.5077  -1  0.820158  1.0000      NA
-    #        2382         NA19672           m008         NA19660 UN    NA  0.2400  0.4719  0.2882  0.5241  -1  0.843816  1.0000 11.9915
-    #        2382         NA19672           m011         NA19685 UN    NA  0.4299  0.5701  0.0000  0.2850  -1  0.766607  1.0000  5.2790
-    #        2382         NA19672           m012         NA19664 UN    NA  0.4757  0.5243  0.0000  0.2622  -1  0.762436  1.0000  4.7609
-    #    6247.001        6247.001          83890         8389003 UN    NA  0.0000  0.9868  0.0132  0.5066  -1  0.819746  1.0000      NA
-    #    6247.001        6247.001          83890         8389004 UN    NA  0.0000  0.9994  0.0006  0.5003  -1  0.817452  1.0000      NA
-    #       61589           61589          88833         8883303 UN    NA  0.0000  0.9974  0.0026  0.5013   0  0.817813  1.0000      NA
-    #       61589           61589          88833         8883304 UN    NA  0.0000  0.9987  0.0013  0.5007   0  0.817577  1.0000      NA
-    #      AG-103          AG-103         AG-104          AG-104 UN    NA  0.5379  0.4525  0.0097  0.2359  -1  0.760481  1.0000  4.1429
-    #      AG-103          AG-103         AG-105          AG-105 UN    NA  0.0000  0.9965  0.0035  0.5018  -1  0.817986  1.0000      NA
-    #      AG-107          AG-107       AG-107.4        AG-107.4 UN    NA  0.2065  0.4849  0.3086  0.5510  -1  0.851193  1.0000 12.9276
-    #      AG-107          AG-107       AG-107.5        AG-107.5 UN    NA  0.0000  0.9823  0.0177  0.5088  -1  0.820565  1.0000      NA
-    #      AG-107          AG-107       AG-107.6        AG-107.6 UN    NA  0.0000  0.9991  0.0009  0.5004  -1  0.817493  1.0000      NA
-    #    AG-107.4        AG-107.4       AG-107.5        AG-107.5 UN    NA  0.4425  0.5389  0.0186  0.2881  -1  0.772513  1.0000  5.6810
-    #    AG-107.4        AG-107.4       AG-107.6        AG-107.6 UN    NA  0.4512  0.5488  0.0000  0.2744  -1  0.766928  1.0000  5.1970
-    #        m004         NA19675           m009         NA19678 UN    NA  0.0000  1.0000  0.0000  0.5000  -1  0.812890  1.0000 1419.5000
-    #        m004         NA19675           m009         NA19679 UN    NA  0.0000  1.0000  0.0000  0.5000  -1  0.811503  1.0000 883.6667
-    #        m008         NA19660           m011         NA19685 UN    NA  0.0000  1.0000  0.0000  0.5000  -1  0.815864  1.0000 1379.5000
-    #        m008         NA19660           m012         NA19664 UN    NA  0.5996  0.3948  0.0055  0.2029  -1  0.752992  1.0000  3.9630
-    #     NA19313         NA19313        NA19331         NA19331 UN    NA  0.0019  0.9444  0.0537  0.5259  -1  0.826931  1.0000 557.8000
-    #     NA19313         NA19313        NA19334         NA19334 UN    NA  0.5134  0.4240  0.0625  0.2746  -1  0.772804  1.0000  4.2205
-    #     NA19355         NA19355        NA19434         NA19434 UN    NA  0.7267  0.2298  0.0435  0.1584  -1  0.746084  1.0000  2.8204
-    #     NA19355         NA19355        NA19444         NA19444 UN    NA  0.6884  0.2588  0.0527  0.1822  -1  0.751937  1.0000  2.9238
-    #     NA19380         NA19380        NA19381         NA19381 UN    NA  0.6231  0.3239  0.0530  0.2149  -1  0.759094  1.0000  3.5642
-    #     NA19380         NA19380        NA19382         NA19382 UN    NA  0.4150  0.5303  0.0547  0.3199  -1  0.782105  1.0000  5.6508
-    #     NA19434         NA19434        NA19444         NA19444 UN    NA  0.2528  0.4841  0.2631  0.5051  -1  0.837832  1.0000  9.5156
-    #     NA19434         NA19434        NA19453         NA19453 UN    NA  0.5781  0.3607  0.0612  0.2415  -1  0.765505  1.0000  3.5889
-    #     NA19443         NA19443        NA19469         NA19469 UN    NA  0.5044  0.4405  0.0551  0.2753  -1  0.772425  1.0000  4.7529
-    #     NA19443         NA19443        NA19470         NA19470 UN    NA  0.2371  0.4731  0.2898  0.5264  -1  0.844432  1.0000 11.6214
-    #       SH028         HG00501          SH032         HG00512 UN    NA  0.2895  0.4373  0.2731  0.4918  -1  0.835676  1.0000  8.4089
-    #       SH028         HG00501          SH036         HG00524 UN    NA  0.2300  0.4898  0.2802  0.5251  -1  0.843449  1.0000 10.1654
-    #       SH052         HG00577          SH054         HG00584 UN    NA  0.2056  0.5151  0.2793  0.5369  -1  0.845949  1.0000 13.2297
-    #       SH052         HG00577          SH058         HG00595 UN    NA  0.7367  0.2085  0.0549  0.1591  -1  0.747067  1.0000  2.7308
-    #       SH052         HG00578          SH053         HG00581 UN    NA  0.1969  0.4987  0.3044  0.5538  -1  0.851482  1.0000 12.7880
-    #       SH052         HG00578          SH062         HG00607 UN    NA  0.6952  0.2514  0.0534  0.1791  -1  0.751321  1.0000  3.0385
-    #       SH052         HG00578          SH071         HG00635 UN    NA  0.2252  0.5120  0.2628  0.5188  -1  0.840806  1.0000 11.5897
-    #       SH053         HG00581          SH062         HG00607 UN    NA  0.7463  0.2004  0.0533  0.1535  -1  0.745728  1.0000  2.8008
-    #       SH053         HG00581          SH071         HG00635 UN    NA  0.2387  0.5394  0.2219  0.4916  -1  0.831848  1.0000 12.1300
- 
+ cleaned=Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo 
+  ##if both are in ohase4and5, we need to remove one pair
+  awk 'NR==FNR{a[$1 $2];next}((($1 $2) in a) && ($3 $4 in a))' ${dirI}/temp_${cleaned}.fam ${dirI}/temp_merge_pruned.genome | awk '$10>=0.2' > ${dirI}/temp_merge_pruned.genome_phase5and6
+  ###for these I better remove controls. and where both pairs are cases, remove the one with a higher missigness rate
+  awk 'NR==FNR{a[$1 $2]=$6;next}($3 $4 in a){$16=a[$3 $4]}1' ${dirI}/temp_${cleaned}.fam <(awk 'NR==FNR{a[$1 $2]=$6;next}($1 $2 in a){$15=a[$1 $2]}1' ${dirI}/temp_${cleaned}.fam ${dirI}/temp_merge_pruned.genome_phase5and6) > ${dirI}/temp_merge_pruned.genome_phase5and6_with_affection
+  ##if one case and one control, remove the control:
+  awk '($15==1 && $16==2) || ($15==2 && $16==1)' ${dirI}/temp_merge_pruned.genome_phase5and6_with_affection  | awk '{if(15==1 && $16==2)print $1, $2; else if($15==2 && $16==1)print $3, $4}' > ${dirI}/temp_remove
+  ##if both case, or both controls, choose based on missingness rate (missingnesss done several lines after here)
+  awk '($15==1 && $16==1) || ($15==2 && $16==2)' ${dirI}/temp_merge_pruned.genome_phase5and6_with_affection | awk '{print $1, $2}' > ${dirI}/temp_merge_pruned.genome_phase5and6_with_affection_to_check_for_missing_rate
+  awk '($15==1 && $16==1) || ($15==2 && $16==2)' ${dirI}/temp_merge_pruned.genome_phase5and6_with_affection | awk '{print $3, $4}' >> ${dirI}/temp_merge_pruned.genome_phase5and6_with_affection_to_check_for_missing_rate
+  ##if both are not from phase4and5 or only one is from 4and5, everything can be removed
+  awk 'NR==FNR{a[$1 $2];next}!((($1 $2) in a) && ($3 $4 in a))' ${dirI}/temp_${cleaned}.fam ${dirI}/temp_merge_pruned.genome | awk '$10>=0.2' > ${dirI}/temp_merge_pruned.genome_phase1to6
+  awk '{print $1, $2}' ${dirI}/temp_merge_pruned.genome_phase1to6 | sed '1d' >> ${dirI}/temp_remove
+  awk '{print $3, $4}' ${dirI}/temp_merge_pruned.genome_phase1to6 | sed '1d' >> ${dirI}/temp_remove
+  ##these people all should be removed since they are either present in previous sets, or are related to the people in previous sets.
+
   #Manually used these above list over extreme overlapping people to make a list of people related to multiple people that can be more efficiently removed (parents etc) then use this to further filter the data; should limit the number of unexessary removals
-  echo "07MH01800H 07MH01800H" > ${dirI}/IBD_common_people_to_remove
-  echo "294 KH09_04_A12" >> ${dirI}/IBD_common_people_to_remove
-  echo "358 GTas2-57" >> ${dirI}/IBD_common_people_to_remove
-  echo "361 GTas4-4" >> ${dirI}/IBD_common_people_to_remove
-  echo "362 GTas4-10" >> ${dirI}/IBD_common_people_to_remove
-  echo "363 GTas12-2" >> ${dirI}/IBD_common_people_to_remove
-  echo "371 GTas53-1" >> ${dirI}/IBD_common_people_to_remove
-  echo "376 GTas73-1" >> ${dirI}/IBD_common_people_to_remove
-  echo "393 GTas230-6" >> ${dirI}/IBD_common_people_to_remove
-  echo "397 GTas305-5" >> ${dirI}/IBD_common_people_to_remove
-  echo "398 GTas309-10" >> ${dirI}/IBD_common_people_to_remove
-  echo "427 Gvic1-37" >> ${dirI}/IBD_common_people_to_remove
-  echo "435 Gvic1-8" >> ${dirI}/IBD_common_people_to_remove
-  echo "478 AG0318" >> ${dirI}/IBD_common_people_to_remove
-  echo "480.013 480.013" >> ${dirI}/IBD_common_people_to_remove
-  echo "480.014 480.014" >> ${dirI}/IBD_common_people_to_remove
-  echo "506 GVic1-38" >> ${dirI}/IBD_common_people_to_remove
-  echo "507 GTas2-53" >> ${dirI}/IBD_common_people_to_remove
-  echo "549 GTas4-30" >> ${dirI}/IBD_common_people_to_remove
-  echo "657.001 657.001" >> ${dirI}/IBD_common_people_to_remove
-  echo "2382 NA19672" >> ${dirI}/IBD_common_people_to_remove
-  echo "6247.001 6247.001" >> ${dirI}/IBD_common_people_to_remove
-  echo "61589 61589" >> ${dirI}/IBD_common_people_to_remove
-  echo "AG-103 AG-103" >> ${dirI}/IBD_common_people_to_remove
-  echo "AG-107 AG-107" >> ${dirI}/IBD_common_people_to_remove
-  echo "AG-107.4 AG-107.4" >> ${dirI}/IBD_common_people_to_remove
-  echo "m004 NA19675" >> ${dirI}/IBD_common_people_to_remove
-  echo "m008 NA19660" >> ${dirI}/IBD_common_people_to_remove
-  echo "NA19313 NA19313" >> ${dirI}/IBD_common_people_to_remove
-  echo "NA19355 NA19355" >> ${dirI}/IBD_common_people_to_remove
-  echo "NA19380 NA19380" >> ${dirI}/IBD_common_people_to_remove
-  echo "NA19434 NA19434" >> ${dirI}/IBD_common_people_to_remove
-  echo "NA19443 NA19443" >> ${dirI}/IBD_common_people_to_remove
-  echo "SH028 HG00501" >> ${dirI}/IBD_common_people_to_remove
-  echo "SH052 HG00577" >> ${dirI}/IBD_common_people_to_remove
-  echo "SH053 HG00581" >> ${dirI}/IBD_common_people_to_remove
-  echo ""
+  #echo "07MH01800H 07MH01800H" > ${dirI}/IBD_common_people_to_remove
+  #echo "294 KH09_04_A12" >> ${dirI}/IBD_common_people_to_remove
+  #echo "358 GTas2-57" >> ${dirI}/IBD_common_people_to_remove
+  #echo "361 GTas4-4" >> ${dirI}/IBD_common_people_to_remove
+  #echo "362 GTas4-10" >> ${dirI}/IBD_common_people_to_remove
+  #echo "363 GTas12-2" >> ${dirI}/IBD_common_people_to_remove
+  #echo "371 GTas53-1" >> ${dirI}/IBD_common_people_to_remove
+  #echo "376 GTas73-1" >> ${dirI}/IBD_common_people_to_remove
+  #echo "393 GTas230-6" >> ${dirI}/IBD_common_people_to_remove
+  #echo "397 GTas305-5" >> ${dirI}/IBD_common_people_to_remove
+  #echo "398 GTas309-10" >> ${dirI}/IBD_common_people_to_remove
+  #echo "427 Gvic1-37" >> ${dirI}/IBD_common_people_to_remove
+  #echo "435 Gvic1-8" >> ${dirI}/IBD_common_people_to_remove
+  #echo "478 AG0318" >> ${dirI}/IBD_common_people_to_remove
+  #echo "480.013 480.013" >> ${dirI}/IBD_common_people_to_remove
+  #echo "480.014 480.014" >> ${dirI}/IBD_common_people_to_remove
+  #echo "506 GVic1-38" >> ${dirI}/IBD_common_people_to_remove
+  #echo "507 GTas2-53" >> ${dirI}/IBD_common_people_to_remove
+  #echo "549 GTas4-30" >> ${dirI}/IBD_common_people_to_remove
+  #echo "657.001 657.001" >> ${dirI}/IBD_common_people_to_remove
+  #echo "2382 NA19672" >> ${dirI}/IBD_common_people_to_remove
+  #echo "6247.001 6247.001" >> ${dirI}/IBD_common_people_to_remove
+  #echo "61589 61589" >> ${dirI}/IBD_common_people_to_remove
+  #echo "AG-103 AG-103" >> ${dirI}/IBD_common_people_to_remove
+  #echo "AG-107 AG-107" >> ${dirI}/IBD_common_people_to_remove
+  #echo "AG-107.4 AG-107.4" >> ${dirI}/IBD_common_people_to_remove
+  #echo "m004 NA19675" >> ${dirI}/IBD_common_people_to_remove
+  #echo "m008 NA19660" >> ${dirI}/IBD_common_people_to_remove
+  #echo "NA19313 NA19313" >> ${dirI}/IBD_common_people_to_remove
+  #echo "NA19355 NA19355" >> ${dirI}/IBD_common_people_to_remove
+  #echo "NA19380 NA19380" >> ${dirI}/IBD_common_people_to_remove
+  #echo "NA19434 NA19434" >> ${dirI}/IBD_common_people_to_remove
+  #echo "NA19443 NA19443" >> ${dirI}/IBD_common_people_to_remove
+  #echo "SH028 HG00501" >> ${dirI}/IBD_common_people_to_remove
+  #echo "SH052 HG00577" >> ${dirI}/IBD_common_people_to_remove
+  #echo "SH053 HG00581" >> ${dirI}/IBD_common_people_to_remove
+  #echo ""
   #then do the same for the second set of IDs, after removing these people
-  awk 'NR==FNR {a[$1,$2];next} !($1,$2) in a' ${dirI}/IBD_common_people_to_remove <( sed 's/ \+/ /g' ${dirI}/temp_merge_pruned.genome | sed 's/^ //g' ) | awk '$10>=0.15 {print $4}' | sort | uniq -c | awk '$1>1' | wc -l
+  #awk 'NR==FNR {a[$1,$2];next} !($1,$2) in a' ${dirI}/IBD_common_people_to_remove <( sed 's/ \+/ /g' ${dirI}/temp_merge_pruned.genome | sed 's/^ //g' ) | awk '$10>=0.15 {print $4}' | sort | uniq -c | awk '$1>1' | wc -l
     #10
-  echo -e "\nThe following people are from col3,4 and match more than one person at IBD > 0.15, will manually filter\n" #need to sort on col 4 to make eyeballing easier
-  awk 'NR==FNR {a[$2];next} $4 in a'   <(awk 'NR==FNR {a[$1,$2];next} !($1,$2) in a' ${dirI}/IBD_common_people_to_remove <( sed 's/ \+/ /g' ${dirI}/temp_merge_pruned.genome | sed 's/^ //g' ) | awk '$10>=0.15 {print $4}' | sort | uniq -c | awk '$1>1' ) ${dirI}/temp_merge_pruned.genome | sed 's/ \+/ /g' | sed 's/^ //g' | sort -k4,4
+  #echo -e "\nThe following people are from col3,4 and match more than one person at IBD > 0.15, will manually filter\n" #need to sort on col 4 to make eyeballing easier
+  #awk 'NR==FNR {a[$2];next} $4 in a'   <(awk 'NR==FNR {a[$1,$2];next} !($1,$2) in a' ${dirI}/IBD_common_people_to_remove <( sed 's/ \+/ /g' ${dirI}/temp_merge_pruned.genome | sed 's/^ //g' ) | awk '$10>=0.15 {print $4}' | sort | uniq -c | awk '$1>1' ) ${dirI}/temp_merge_pruned.genome | sed 's/ \+/ /g' | sed 's/^ //g' | sort -k4,4
     #27 
     #366 GTas37-24 AG-332 AG-332 UN NA 0.3845 0.6106 0.0049 0.3102 -1 0.776316 1.0000 6.1400
     #367 GTas37-29 AG-332 AG-332 UN NA 0.5091 0.4862 0.0047 0.2478 -1 0.762704 1.0000 4.4695
@@ -4536,40 +4445,57 @@ EOF
     #NA19434 NA19434 NA19453 NA19453 UN NA 0.5781 0.3607 0.0612 0.2415 -1 0.765505 1.0000 3.5889
     #NA19444 NA19444 NA19453 NA19453 UN NA 0.4388 0.5065 0.0547 0.3080 -1 0.779510 1.0000 4.9526
 
-  echo "AG-332 AG-332" >> ${dirI}/IBD_common_people_to_remove
-  echo "AG-370 AG-370" >> ${dirI}/IBD_common_people_to_remove
-  echo "AG-585 AG-585" >> ${dirI}/IBD_common_people_to_remove
-  echo "AMI010013 AMI010013" >> ${dirI}/IBD_common_people_to_remove
-  echo "E8382 E8382000" >> ${dirI}/IBD_common_people_to_remove
-  echo "566 GIST4-16" >> ${dirI}/IBD_common_people_to_remove
-  echo "507 GTas2-53" >> ${dirI}/IBD_common_people_to_remove
-  echo "SH089 HG00702" >> ${dirI}/IBD_common_people_to_remove
-  echo "M30242 M30242" >> ${dirI}/IBD_common_people_to_remove
-  echo "NA19434 NA19434" >> ${dirI}/IBD_common_people_to_remove
-  wc -l ${dirI}/IBD_common_people_to_remove
+  #echo "AG-332 AG-332" >> ${dirI}/IBD_common_people_to_remove
+  #echo "AG-370 AG-370" >> ${dirI}/IBD_common_people_to_remove
+  #echo "AG-585 AG-585" >> ${dirI}/IBD_common_people_to_remove
+  #echo "AMI010013 AMI010013" >> ${dirI}/IBD_common_people_to_remove
+  #echo "E8382 E8382000" >> ${dirI}/IBD_common_people_to_remove
+  #echo "566 GIST4-16" >> ${dirI}/IBD_common_people_to_remove
+  #echo "507 GTas2-53" >> ${dirI}/IBD_common_people_to_remove
+  #echo "SH089 HG00702" >> ${dirI}/IBD_common_people_to_remove
+  #echo "M30242 M30242" >> ${dirI}/IBD_common_people_to_remove
+  #echo "NA19434 NA19434" >> ${dirI}/IBD_common_people_to_remove
+  #wc -l ${dirI}/IBD_common_people_to_remove
     #46
   #need the missingness amount to handle the rest
   echo -e "\nDropping common samples by missingness\n"
   plink_1.90 --threads 1 --bfile ${dirI}/temp_merge_pruned --missing --out ${dirI}/temp_merge_pruned --silent
   echo ""
+  #awk 'NR==FNR{a[$1 $2];next}($1 $2 in a)' ${dirI}/temp_merge_pruned.genome_phase5and6_with_affection_to_check_for_missing_rate ${dirI}/temp_merge_pruned.imiss > f
+  #awk 'NR==FNR{a[$1 $2]=$6;next}($1 $2 in a){$17=a[$1 $2]}1' f ${dirI}/temp_merge_pruned.genome_phase5and6_with_affection > f2
+  #awk 'NR==FNR{a[$1 $2]=$6;next}($3 $4 in a){print $0, a[$3 $4]}' f f2 > f3 ##these 3 can be shrinked to:
+  awk 'NR==FNR{a[$1 $2]=$6;next}($3 $4 in a){print $0, a[$3 $4]}' <(awk 'NR==FNR{a[$1 $2];next}($1 $2 in a)' ${dirI}/temp_merge_pruned.genome_phase5and6_with_affection_to_check_for_missing_rate ${dirI}/temp_merge_pruned.imiss) <(awk 'NR==FNR{a[$1 $2]=$6;next}($1 $2 in a){$17=a[$1 $2]}1' <(awk 'NR==FNR{a[$1 $2];next}($1 $2 in a)' ${dirI}/temp_merge_pruned.genome_phase5and6_with_affection_to_check_for_missing_rate ${dirI}/temp_merge_pruned.imiss) ${dirI}/temp_merge_pruned.genome_phase5and6_with_affection) > ${dirI}/temp_merge_pruned.genome_phase5and6_with_affection_with_missigness
+  ##the above is the shrinkage pf three seperate awk commands as above
+  awk '{if($17>$18)print $1, $2; else if($18>$17)print $3, $4; else print $1, $2}' ${dirI}/temp_merge_pruned.genome_phase5and6_with_affection_with_missigness >> ${dirI}/temp_remove
+  ###also to remove the people with the same IID and FID with phase 1, 2 and 3 (since after merging datasets in plink, if there are duplicates with the same ID, they will be merged as one person. Then for IBD, we won't detect them since they are considered as the same person). 
+  dirJG=/working/lab_stuartma/puyaG/glaucoma/POAG_cases_recent_011015_0928
+  raw_data4=ANZRAG_POAG_cases_phase3_QIMR_twins_controls_merged_cleaned5_relatedness_removed2_ancestry_outliers_removed
+
+#OAG phase 1 and 2
+  dirOAG=/working/lab_stuartma/puyaG/glaucoma
+  raw_data5=WAMHS_GLUACOMA_IBD_BEACON_final_clean_IBD_PCA_outliers_removed
+  awk 'NR==FNR{a[$1 $2];next}($1 $2 in a)' ${dirJG}/${raw_data4}.fam ${dirI}/temp_${cleaned}.fam | awk '{print $1, $2}' >> ${dirI}/temp_remove
+ awk 'NR==FNR{a[$1 $2];next}($1 $2 in a)' ${dirOAG}/${raw_data5}.fam ${dirI}/temp_${cleaned}.fam | awk '{print $1, $2}' >> ${dirI}/temp_remove
+  awk '!a[$2]++' ${dirI}/temp_remove > ${dirI}/temp_remove2
+  cp ${dirI}/temp_remove2 ${dirK}/POAG_clean_2016_merged_IBD_drop_ID
   #number of people in the file after you drop the people who match multiple people
-  awk 'NR==FNR {a[$1,$2];next} !(($1,$2) in a) && !(($3,$4) in a)' ${dirI}/IBD_common_people_to_remove  ${dirI}/temp_merge_pruned.genome | awk '$10>0.15' | wc -l
+  #awk 'NR==FNR {a[$1,$2];next} !(($1,$2) in a) && !(($3,$4) in a)' ${dirI}/IBD_common_people_to_remove  ${dirI}/temp_merge_pruned.genome | awk '$10>0.15' | wc -l
      #264; down from 370
-  awk 'NR==FNR {a[$2]=$6;next} $2 in a {print $0,a[$2]}' ${dirI}/temp_merge_pruned.imiss <( awk 'NR==FNR {a[$1,$2];next} !(($1,$2) in a) && !(($3,$4) in a)' ${dirI}/IBD_common_people_to_remove  ${dirI}/temp_merge_pruned.genome) > ${dirI}/temp_merge_pruned.genome_1
-  awk 'NR==FNR {a[$2]=$6;next} $4 in a {print $0,a[$4]}' ${dirI}/temp_merge_pruned.imiss ${dirI}/temp_merge_pruned.genome_1 > ${dirI}/temp_merge_pruned.genome_2
-  head ${dirI}/temp_merge_pruned.genome_2
-  echo ""
+  #awk 'NR==FNR {a[$2]=$6;next} $2 in a {print $0,a[$2]}' ${dirI}/temp_merge_pruned.imiss <( awk 'NR==FNR {a[$1,$2];next} !(($1,$2) in a) && !(($3,$4) in a)' ${dirI}/IBD_common_people_to_remove  ${dirI}/temp_merge_pruned.genome) > ${dirI}/temp_merge_pruned.genome_1
+  #awk 'NR==FNR {a[$2]=$6;next} $4 in a {print $0,a[$4]}' ${dirI}/temp_merge_pruned.imiss ${dirI}/temp_merge_pruned.genome_1 > ${dirI}/temp_merge_pruned.genome_2
+  #head ${dirI}/temp_merge_pruned.genome_2
+  #echo ""
   #make a drop list. 17/03/2016 aargh, drop list formula is wrong - both times was printing $2, $15<$16 should print $4
-  awk '{
-    if($10>0.15 && $15>=$16)
-      print $2;
-    if($10>0.15 && $15<$16)
-      print $4;
-    }' ${dirI}/temp_merge_pruned.genome_2 > ${dirI}/temp_merge_pruned.genome_2_IID; wc -l ${dirI}/temp_merge_pruned.genome_2_IID
+  #awk '{
+   # if($10>0.15 && $15>=$16)
+    #  print $2;
+    #if($10>0.15 && $15<$16)
+     # print $4;
+   # }' ${dirI}/temp_merge_pruned.genome_2 > ${dirI}/temp_merge_pruned.genome_2_IID; wc -l ${dirI}/temp_merge_pruned.genome_2_IID
        #263
 
-  awk 'NR==FNR {a[$1];next} $2 in a {print $1,$2}' ${dirI}/temp_merge_pruned.genome_2_IID ${dirI}/temp_merge_pruned.fam > ${dirI}/temp_merge_pruned.genome_3_IID
-  cat ${dirI}/temp_merge_pruned.genome_3_IID ${dirI}/IBD_common_people_to_remove | sort | uniq >  ${dirK}/2016_cleaning_Melanoma_IBD_drop_ID; wc -l ${dirK}/2016_cleaning_Melanoma_IBD_drop_ID
+  #awk 'NR==FNR {a[$1];next} $2 in a {print $1,$2}' ${dirI}/temp_merge_pruned.genome_2_IID ${dirI}/temp_merge_pruned.fam > ${dirI}/temp_merge_pruned.genome_3_IID
+  #cat ${dirI}/temp_merge_pruned.genome_3_IID ${dirI}/IBD_common_people_to_remove | sort | uniq >  ${dirK}/2016_cleaning_Melanoma_IBD_drop_ID; wc -l ${dirK}/2016_cleaning_Melanoma_IBD_drop_ID
     #302 samples (note 0.15 more extreme than used before) note this includes a handful of hapmap samples. 
 
   #quick once of test to make sure this worked
@@ -4578,59 +4504,60 @@ EOF
     #awk '$10>0.15' ${dirI}/temp_merge_pruned_v2.genome
       #none
 
-done #loop to turn on/off
+#done #loop to turn on/off
 
 ########################################################################
 #9.0 Drop IBD/PCA outliers
 ########################################################################
 
   #see section 11.0 but these were identified as having bad cluster plots in EPIGENE
-  echo "rs9662633" > ${dirI}/EPIGENE_failed_cluster
-  echo "rs41306613" >> ${dirI}/EPIGENE_failed_cluster
-  echo "rs4670855" >> ${dirI}/EPIGENE_failed_cluster
-  echo "rs4493574" >> ${dirI}/EPIGENE_failed_cluster
-  echo "rs9443079" >> ${dirI}/EPIGENE_failed_cluster
-  echo "rs61731700" >> ${dirI}/EPIGENE_failed_cluster
-  echo "rs9403839" >> ${dirI}/EPIGENE_failed_cluster
-  echo "rs13265018" >> ${dirI}/EPIGENE_failed_cluster
-  echo "rs10107655" >> ${dirI}/EPIGENE_failed_cluster
-  echo "exm779484" >> ${dirI}/EPIGENE_failed_cluster
-  echo "rs61866610" >> ${dirI}/EPIGENE_failed_cluster
-  echo "rs74017766" >> ${dirI}/EPIGENE_failed_cluster
-  echo "exm1345519" >> ${dirI}/EPIGENE_failed_cluster
-  echo "rs7276462" >> ${dirI}/EPIGENE_failed_cluster
+  #echo "rs9662633" > ${dirI}/EPIGENE_failed_cluster
+  #echo "rs41306613" >> ${dirI}/EPIGENE_failed_cluster
+  #echo "rs4670855" >> ${dirI}/EPIGENE_failed_cluster
+  #echo "rs4493574" >> ${dirI}/EPIGENE_failed_cluster
+  #echo "rs9443079" >> ${dirI}/EPIGENE_failed_cluster
+  #echo "rs61731700" >> ${dirI}/EPIGENE_failed_cluster
+  #echo "rs9403839" >> ${dirI}/EPIGENE_failed_cluster
+  #echo "rs13265018" >> ${dirI}/EPIGENE_failed_cluster
+  #echo "rs10107655" >> ${dirI}/EPIGENE_failed_cluster
+  #echo "exm779484" >> ${dirI}/EPIGENE_failed_cluster
+  #echo "rs61866610" >> ${dirI}/EPIGENE_failed_cluster
+  #echo "rs74017766" >> ${dirI}/EPIGENE_failed_cluster
+  #echo "exm1345519" >> ${dirI}/EPIGENE_failed_cluster
+  #echo "rs7276462" >> ${dirI}/EPIGENE_failed_cluster
 
   #likewise see 11.0 - extreme ORs and poor past imputation concordance
-  echo rs17774013 > ${dirI}/HEIDELBERG_poor_past_imputation
-  echo rs870585 >> ${dirI}/HEIDELBERG_poor_past_imputation
-  echo rs644893 >> ${dirI}/HEIDELBERG_poor_past_imputation
+  #echo rs17774013 > ${dirI}/HEIDELBERG_poor_past_imputation
+  #echo rs870585 >> ${dirI}/HEIDELBERG_poor_past_imputation
+  #echo rs644893 >> ${dirI}/HEIDELBERG_poor_past_imputation
 
 
 #will need these for analysis but don't exclude prior to imputation as may as well impute them
-awk 'NR==FNR {a[$1,$2];next} ($1,$2) in a'  /mnt/lustre/home/matthewL/Melanoma/Meta_analysis/IDs_selfreportedmel_exclude.txt ${dirI}/temp_2016_cleaning_QMEGA_610k_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff.fam | wc -l
+#awk 'NR==FNR {a[$1,$2];next} ($1,$2) in a'  /mnt/lustre/home/matthewL/Melanoma/Meta_analysis/IDs_selfreportedmel_exclude.txt ${dirI}/temp_2016_cleaning_QMEGA_610k_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff.fam | wc -l
   #128 - sounds about right, thought it was ~120 or so
 
-for x in 1
-do
-  for i in temp_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff temp_2016_cleaning_QMEGA_610k_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff temp_2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
-  do
+#for x in 1
+#do
+  #for i in temp_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff temp_2016_cleaning_QMEGA_610k_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff temp_2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
+  #do
     echo -e "\nRemoving IBD and PCA outliers for ${i}\n"
-    cat ${dirK}/Melanoma_clean_2016_merged_GBR_CEU_FIN_outlier_3sd.txt ${dirK}/2016_cleaning_Melanoma_IBD_drop_ID | sort | uniq > ${dirI}/temp_remove
-    plink_1.90 --threads 1 --bfile ${dirI}/${i} --remove ${dirI}/temp_remove --make-bed --out ${dirI}/${i}_PCA_IBD
+    cat ${dirK}/POAG_clean_phase4and5_2016_merged_GBR_CEU_FIN_outlier_6sd.txt ${dirK}/POAG_clean_2016_merged_IBD_drop_ID | sort | uniq > ${dirI}/temp_remove
+   i=temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo 
+   plink_1.90 --threads 1 --bfile ${dirI}/${i} --remove ${dirI}/temp_remove --make-bed --out ${dirI}/${i}_PCA_IBD
     rm -f ${dirI}/temp_remove
-  done 
+  #done 
 
   #EPIGENE sep
-  i=temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
-  cat ${dirK}/Melanoma_clean_2016_merged_GBR_CEU_FIN_outlier_3sd.txt ${dirK}/2016_cleaning_Melanoma_IBD_drop_ID | sort | uniq > ${dirI}/temp_remove
-  plink_1.90 --threads 1 --bfile ${dirI}/${i} --remove ${dirI}/temp_remove --make-bed --out ${dirI}/${i}_PCA_IBD --exclude ${dirI}/EPIGENE_failed_cluster
+  #i=temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
+  #cat ${dirK}/Melanoma_clean_2016_merged_GBR_CEU_FIN_outlier_3sd.txt ${dirK}/2016_cleaning_Melanoma_IBD_drop_ID | sort | uniq > ${dirI}/temp_remove
+  #plink_1.90 --threads 1 --bfile ${dirI}/${i} --remove ${dirI}/temp_remove --make-bed --out ${dirI}/${i}_PCA_IBD --exclude ${dirI}/EPIGENE_failed_cluster
 
   #HEI
-  i=temp_2016_cleaning_HEIDELBERG_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
-  cat ${dirK}/Melanoma_clean_2016_merged_GBR_CEU_FIN_outlier_3sd.txt ${dirK}/2016_cleaning_Melanoma_IBD_drop_ID | sort | uniq > ${dirI}/temp_remove
-  plink_1.90 --threads 1 --bfile ${dirI}/${i} --remove ${dirI}/temp_remove --make-bed --out ${dirI}/${i}_PCA_IBD --exclude ${dirI}/HEIDELBERG_poor_past_imputation
+  #i=temp_2016_cleaning_HEIDELBERG_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff
+  #cat ${dirK}/Melanoma_clean_2016_merged_GBR_CEU_FIN_outlier_3sd.txt ${dirK}/2016_cleaning_Melanoma_IBD_drop_ID | sort | uniq > ${dirI}/temp_remove
+  #plink_1.90 --threads 1 --bfile ${dirI}/${i} --remove ${dirI}/temp_remove --make-bed --out ${dirI}/${i}_PCA_IBD --exclude ${dirI}/HEIDELBERG_poor_past_imputation
 
-done
+#done
 
   #AMFS: 971 phenotype values loaded from .fam. Among remaining phenotypes, 535 are cases and 427 are controls. (Must have been IBD - I have since noted there are some sibs across the QMEGA and AMFS set
   #610k 4851 phenotype values loaded from .fam. --remove: 4826 people remaining. Among remaining phenotypes, 912 are cases and 3914 are controls.. Again IBD, and there are a bunch of overlaps between the control set and other studies (people acted as controls in multiple studies in QLD etc)
@@ -4647,6 +4574,31 @@ done
   #Q-MEGA_omni	691	553
   #WAMHS	1,253	2,053
   #Essen-Heidelberg	1,212	1,219  
+
+###to check whether to keep or drop the SNPs with high missgness rate difference between cases and controls. Since missigness is correlated with genotyping error (especially calling heterozygotes), it should be checked at least by checking genomic inflation lambda:
+awk 'NR==FNR{a[$2];next}!($2 in a)' temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_hweCa_diff.bim temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo.bim > missigness_diff
+plink_1.90 --bfile temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_PCA_IBD --exclude missigness_diff --assoc --out test
+plink_1.90 --bfile temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_PCA_IBD --extract missigness_diff --assoc --out test2
+plink_1.90 --bfile temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_PCA_IBD --maf 0.05 --exclude missigness_diff --assoc --out test3
+plink_1.90 --bfile temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_PCA_IBD --maf 0.05 --extract missigness_diff --assoc --out test4
+
+module load R
+R --no-save << EOF
+x=read.table("test.assoc",header=T)
+x2=read.table("test2.assoc",header=T)
+x3=read.table("test3.assoc",header=T)
+x4=read.table("test4.assoc",header=T)
+median(x\$CHISQ)/qchisq(0.5,1)
+#1.048498
+median(x2\$CHISQ)/qchisq(0.5,1)
+#1.077513
+median(x3\$CHISQ)/qchisq(0.5,1)
+#1.052894
+median(x4\$CHISQ)/qchisq(0.5,1)
+#1.072018
+EOF
+##after cleaning for maf 0.05, lambda is 1.052894 for all SNPs excluding missingness SNPs, and 1.072018 for only the missingness SNPs. Thus we can go ahead without the need to drop these SNPs.
+
 
 ########################################################################
 #10.0 HRC or 1000G Imputation preparation and checking 
