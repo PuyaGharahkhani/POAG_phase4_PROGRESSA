@@ -4599,6 +4599,20 @@ median(x4\$CHISQ)/qchisq(0.5,1)
 EOF
 ##after cleaning for maf 0.05, lambda is 1.052894 for all SNPs excluding missingness SNPs, and 1.072018 for only the missingness SNPs. Thus we can go ahead without the need to drop these SNPs.
 
+##to check whether the missigness diff is mainly coming from a subset of cases (non-advanced vs progressa)?
+cat ${dirJB}/${raw_data2}.fam <(awk '$6==1' temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_PCA_IBD.fam) | awk '{print $1, $2}' > progressa_controls
+cat ${dirJ}/${raw_data}.fam <(awk '$6==1' temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_PCA_IBD.fam) | awk '{print $1, $2}' > non-advanced_controls 
+plink_1.90 --bfile temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_PCA_IBD --keep progressa_controls --test-missing --out test5
+plink_1.90 --bfile temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_PCA_IBD --keep non-advanced_controls --test-missing --out test6
+awk '$5<5e-6' test5.missing | wc -l
+#11407
+awk '$5<5e-6' test6.missing | wc -l
+#2652
+#so majority comes from the progressa set.
+rm -f progressa_controls non-advanced_controls test* 
+###One option is to split the data to non-advanced and progressa since the majority of the missigness diff comes from progressa. However, in the cleaned dataset, there are 393 non-advanced cases and 944 progressa. spliting them will result in low power for non-advanced POAG, and the missigness problem will exist for the larger dataset, progressa. And since lambda was not high for the 20K SNPs, maybe we better go ahead with the combined dataset.
+plink_1.90 --bfile temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_PCA_IBD --maf 0.01 --geno 0.03 --mind 0.03 --hwe 0.0001 --make-bed --out temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_PCA_IBD_maf1
+##we decided to use maf 0.01 to be consistent with he previous studies:
 
 ########################################################################
 #10.0 HRC or 1000G Imputation preparation and checking 
@@ -4610,12 +4624,13 @@ EOF
 
 for x in 1
 do
-  for i in temp_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_QMEGA_610k_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_HEIDELBERG_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD
+   for i in temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_PCA_IBD_maf1  #temp_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_QMEGA_610k_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_HEIDELBERG_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD
   do
     echo -e "\nAligning ${i} to HRC using HRC-1000G-check-bim.pl\n"
     plink_1.90 --threads 1 --bfile ${dirI}/${i} --freq --out ${dirI}/${i} --silent
     cd $dirI  #note the perl function makes files in the current directory if testing...
-    perl /mnt/lustre/home/matthewL/bin/HRC-1000G-check-bim.pl -b ${dirI}/${i}.bim -f ${dirI}/${i}.frq -r /working/lab_stuartma/puyaG/HRC.r1-1.GRCh37.wgs.mac5.sites.tab  -h -t 0.2
+    perl /working/lab_stuartma/puyaG/HRC-1000G-check-bim.pl -b ${dirI}/${i}.bim -f ${dirI}/${i}.frq -r /working/lab_stuartma/puyaG/HRC.r1-1.GRCh37.wgs.mac5.sites.tab -h -t 0.2
+    #perl /mnt/lustre/home/matthewL/bin/HRC-1000G-check-bim.pl -b ${dirI}/${i}.bim -f ${dirI}/${i}.frq -r /working/lab_stuartma/puyaG/HRC.r1-1.GRCh37.wgs.mac5.sites.tab  -h -t 0.2
     #check the exclusion list
     echo ""
     wc -l ${dirI}/Exclude-${i}-HRC.txt
@@ -4627,26 +4642,26 @@ do
     #rename and move to a discrete folder. Looks like it makes final chr files; all else can be removed. Actually looks like it does a full conversion (out ${i}-updated.bim etc) then a filal chromosome split
     outname=`echo ${i} | sed 's/temp_//g'`
     echo ""
-    plink_1.90 --threads 1 --bfile ${dirI}/${i}-updated --make-bed --out ${dirK}/HRC_upload_cleaned_files_lower_MAF/${outname}-updated --silent
+    plink_1.90 --threads 1 --bfile ${dirI}/${i}-updated --make-bed --out ${dirK}/${outname}-updated --silent
     rm -f ${dirI}/${i}-updated.*
     echo ""
     for w in {1..23}
     do
-      plink_1.90 --threads 1 --bfile ${dirI}/${i}-updated-chr${w} --make-bed --out ${dirK}/HRC_upload_cleaned_files_lower_MAF/${outname}-updated-chr${w} --silent
+      plink_1.90 --threads 1 --bfile ${dirI}/${i}-updated-chr${w} --make-bed --out ${dirK}/${outname}-updated-chr${w} --silent
       rm -f ${dirI}/${i}-updated-chr${w}.*
     done
-    echo -e "\nAligned and cleaned files moved to ${dirK}/HRC_upload_cleaned_files_lower_MAF. Now making a second send with MAF >=0.01 SNPs only."
+    echo -e "\nAligned and cleaned files moved to ${dirK}"
     #check check if this set is worth doing a low maf version
-    var_rare=`awk 'NR>1 && $5<0.01' ${dirI}/${i}.frq | wc -l`
+    #var_rare=`awk 'NR>1 && $5<0.01' ${dirI}/${i}.frq | wc -l`
       
-    echo -e "\nFor ${i} there are ${var_rare} SNPs with MAF < 0.01 and > 0.001\n"
+    #echo -e "\nFor ${i} there are ${var_rare} SNPs with MAF < 0.01 and > 0.001\n"
 
     #in the form ${i}-updated-chr23.fam. The default files is MAF 0.001 so just make 0.01 
-    for q in {1..23}
-    do
-      plink_1.90 --threads 1 --bfile ${dirK}/HRC_upload_cleaned_files_lower_MAF/${outname}-updated-chr${q} --maf 0.01 --make-bed --out ${dirK}/HRC_upload_cleaned_files/${outname}_maf01-updated-chr${q} --silent
-    done
-    echo -e "\n${i} has been aligned to 1KG and final clean files have been made"
+    #for q in {1..23}
+    #do
+      #plink_1.90 --threads 1 --bfile ${dirK}/HRC_upload_cleaned_files_lower_MAF/${outname}-updated-chr${q} --maf 0.01 --make-bed --out ${dirK}/HRC_upload_cleaned_files/${outname}_maf01-updated-chr${q} --silent
+    #done
+    #echo -e "\n${i} has been aligned to 1KG and final clean files have been made"
     #clean up
     rm -f ${dirI}/Run-plink.sh ${dirI}/Run-plink_v2.sh ${dirI}/Force-Allele1-${i}-HRC.txt ${dirI}/Chromosome-${i}-HRC.txt ${dirI}/Exclude-${i}-HRC.txt ${dirI}/FreqPlot-${i}-HRC.txt ${dirI}/ID-${i}-HRC.txt ${dirI}/LOG-${i}-HRC.txt ${dirI}/Position-${i}-HRC.txt ${dirI}/Strand-Flip-${i}-HRC.txt ${dirI}/${i}.frq
   done #loop through sets
@@ -4734,12 +4749,12 @@ done #loop to turn on/off
 
 for x in 1
 do
-  for i in temp_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_QMEGA_610k_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_HEIDELBERG_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD
+  for i in temp_Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_PCA_IBD_maf1 #temp_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_QMEGA_610k_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_EPIGENE_QTWIN_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_HEIDELBERG_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD temp_2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD
   do
     outname=`echo ${i} | sed 's/temp_//g'`
     echo -e "\nRunning GWAS with data before alignment to HRC via HRC-1000G-check-bim\n"
     plink_1.90 --threads 1 --bfile ${dirI}/${i} --assoc --out ${dirI}/${i} --silent
-    plink_1.90 --threads 1 --bfile ${dirI}/${i} --logistic --covar ${dirK}/Melanoma_clean_2016_merged_PCA.eigenvec_IDs --covar-name PC1 PC2 PC3 PC4 PC5 PC6 --hide-covar --out ${dirI}/${i} --silent 
+    plink_1.90 --threads 1 --bfile ${dirI}/${i} --logistic --covar ${dirK}/POAG_clean_2016_merged_PCA.eigenvec_IDs --covar-name PC1 PC2 PC3 PC4 PC5 PC6 --hide-covar --out ${dirI}/${i} --silent 
     echo -e "\nUncorrected GWAS results for ${i} that are < 5e-7\n"
     awk 'NR==1 || $9<5e-7' ${dirI}/${i}.assoc
     echo -e "\n${i} results corrected for first 6 PCs. Showing 1e-6 SNPs as p values may have decreased\n"
@@ -4750,8 +4765,8 @@ do
     awk 'NR==1 || $9!="NA" {print $9}' ${dirI}/${i}.assoc.logistic > ${dirI}/${i}.assoc.logistic_t
 
     echo -e "\nRunning GWAS for the HRC aligned - some extra SNPs dropped (extreme MAF differences)"
-    plink_1.90 --threads 1 --bfile ${dirK}/HRC_upload_cleaned_files_lower_MAF/${outname}-updated --assoc --out ${dirI}/${i}_v2 --silent
-    plink_1.90 --threads 1 --bfile ${dirK}/HRC_upload_cleaned_files_lower_MAF/${outname}-updated --logistic --covar ${dirK}/Melanoma_clean_2016_merged_PCA.eigenvec_IDs --covar-name PC1 PC2 PC3 PC4 PC5 PC6 --hide-covar  --out ${dirI}/${i}_v2 --silent
+    plink_1.90 --threads 1 --bfile ${dirK}/${outname}-updated --assoc --out ${dirI}/${i}_v2 --silent
+    plink_1.90 --threads 1 --bfile ${dirK}/${outname}-updated --logistic --covar ${dirK}/POAG_clean_2016_merged_PCA.eigenvec_IDs --covar-name PC1 PC2 PC3 PC4 PC5 PC6 --hide-covar  --out ${dirI}/${i}_v2 --silent
  
     echo -e "\nUncorrected GWAS results for HRC aligned version of ${i} that are <5e-7\n"
     awk 'NR==1 || $9<5e-7' ${dirI}/${i}_v2.assoc
@@ -4773,19 +4788,19 @@ read.table("${dirI}/${i}_v2.assoc.logistic_t",header=T)->gg;dim(gg)
 
 round(median(qchisq(dd\$P,1,lower.tail=FALSE))/0.456,4)
 
-png("${dirI}/${i}_QQ_no_PCs.png"); qqcustom(dd\$P); dev.off()
+#png("${dirI}/${i}_QQ_no_PCs.png"); qqcustom(dd\$P); dev.off()
 
 round(median(qchisq(ee\$P,1,lower.tail=FALSE))/0.456,4)
 
-png("${dirI}/${i}_QQ_6_PCs.png"); qqcustom(ee\$P) ; dev.off()
+#png("${dirI}/${i}_QQ_6_PCs.png"); qqcustom(ee\$P) ; dev.off()
 
 round(median(qchisq(ff\$P,1,lower.tail=FALSE))/0.456,4)
 
-png("${dirI}/${i}_HRC_aligned_QQ_no_PCs.png") ; qqcustom(ff\$P) ; dev.off()
+#png("${dirI}/${i}_HRC_aligned_QQ_no_PCs.png") ; qqcustom(ff\$P) ; dev.off()
 
 round(median(qchisq(gg\$P,1,lower.tail=FALSE))/0.456,4)
 
-png("${dirI}/${i}_HRC_aligned_QQ_6_PCs.png") ; qqcustom(gg\$P) ; dev.off()
+#png("${dirI}/${i}_HRC_aligned_QQ_6_PCs.png") ; qqcustom(gg\$P) ; dev.off()
 
 q()
 EOF
@@ -5023,7 +5038,7 @@ done #loop to turn on/off
 
   #HRC cleaning - no diff in SNPs/values. No PC6 1.041, with PC6 1.017
 
-  zgrep -a rs2244291 ../cleaned/IMPUTATION_RESULTS/CIDR_WAMHS_IMPUTATION/Archive_CIDR_WAMHS_chromosome_4_imputation.tar.gz 
+ # zgrep -a rs2244291 ../cleaned/IMPUTATION_RESULTS/CIDR_WAMHS_IMPUTATION/Archive_CIDR_WAMHS_chromosome_4_imputation.tar.gz 
      #4 rs2244291 53468479 0.105 1.000 1.000 2 0.935 0.991 0.960 <<well mask imputed, highly concordant
 
   ##plink_1.90 --threads 1 --bfile /reference/genepi/public_reference_panels/1000G_20101123_v3/derived_plinkformat/chr4.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.EUR --ld rs2244291  rs2898681
@@ -5032,9 +5047,9 @@ done #loop to turn on/off
       # Still, pretty big coincidence. 
 
 
-  zgrep -a rs2256965 ../cleaned/IMPUTATION_RESULTS/CIDR_WAMHS_IMPUTATION/Archive_CIDR_WAMHS_chromosome_6_imputation.tar.gz 
+  #zgrep -a rs2256965 ../cleaned/IMPUTATION_RESULTS/CIDR_WAMHS_IMPUTATION/Archive_CIDR_WAMHS_chromosome_6_imputation.tar.gz 
       #6 rs2256965 31555130 0.588 1.000 1.000 2 0.953 0.993 0.982 <<well imputed, hihgly concordant.
-plink_1.90 --threads 1 --bfile /reference/genepi/public_reference_panels/1000G_20101123_v3/derived_plinkformat/chr6.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.EUR --ld rs1799964 rs2256965
+#plink_1.90 --threads 1 --bfile /reference/genepi/public_reference_panels/1000G_20101123_v3/derived_plinkformat/chr6.phase1_release_v3.20101123.snps_indels_svs.genotypes.refpanel.EUR --ld rs1799964 rs2256965
      #--ld rs1799964 rs2256965:    R-sq = 0.199124       D' = 0.978956  <<suggests residual from the IBD set. 
 
    #no further action needed on SNPs for WAMHS. Problem with using cases as controls though....
