@@ -5068,29 +5068,29 @@ done #loop to turn on/off
 
 for x in 1
 do
-  for i in 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD 2016_cleaning_QMEGA_610k_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD 2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD 2016_cleaning_EPIGENE_QTWIN_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD 2016_cleaning_HEIDELBERG_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD 2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD
+  for i in Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_PCA_IBD_maf1 #2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD 2016_cleaning_QMEGA_610k_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD 2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD 2016_cleaning_EPIGENE_QTWIN_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD 2016_cleaning_HEIDELBERG_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD 2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD
   do
     module load vcftools/0.1.14
     #make vcf of all SNPs
     echo -e  "\nConverting ${i} files into sorted .vcf.gz"
       for RR in {1..23}
       do
-        plink_1.90 --threads 1 --bfile ${dirK}/HRC_upload_cleaned_files_lower_MAF/${i}-updated-chr${RR} --recode vcf --out ${dirK}/HRC_upload_cleaned_files_lower_MAF/${i}-updated-chr${RR} --silent
+        plink_1.90 --threads 1 --bfile ${dirK}/${i}-updated-chr${RR} --recode vcf --out ${dirK}/${i}-updated-chr${RR} --silent
         #gzip normally doesn't like working across directories, I think, so be safe
-        cd ${dirK}/HRC_upload_cleaned_files_lower_MAF
+        cd ${dirK}
         vcf-sort ${i}-updated-chr${RR}.vcf | bgzip -c > ${i}-updated-chr${RR}.vcf.gz
           ##python /mnt/lustre/home/matthewL/bin/checkVCF/checkVCF.py -r /mnt/lustre/home/matthewL/bin/checkVCF/hs37d5.fa -o test ${i}-updated-chr${RR}.vcf.gz
             #AMFS chr1 - tells me 18790 inconsistant sites (as in different strand). but aligned by will's function... tempted to drop this step. No other errors. 
             #AMFS 22 - 3072 inconsistant. 
 
         rm -f ${i}-updated-chr${RR}.vcf
-        echo ""
-        plink_1.90 --threads 1 --bfile ${dirK}/HRC_upload_cleaned_files/${i}_maf01-updated-chr${RR} --recode vcf --out ${dirK}/HRC_upload_cleaned_files/${i}_maf01-updated-chr${RR} --silent
-        cd ${dirK}/HRC_upload_cleaned_files
-        vcf-sort ${i}_maf01-updated-chr${RR}.vcf | bgzip -c > ${i}_maf01-updated-chr${RR}.vcf.gz
+        #echo ""
+        #plink_1.90 --threads 1 --bfile ${dirK}/HRC_upload_cleaned_files/${i}_maf01-updated-chr${RR} --recode vcf --out ${dirK}/HRC_upload_cleaned_files/${i}_maf01-updated-chr${RR} --silent
+        #cd ${dirK}/HRC_upload_cleaned_files
+        #vcf-sort ${i}_maf01-updated-chr${RR}.vcf | bgzip -c > ${i}_maf01-updated-chr${RR}.vcf.gz
           ##python /mnt/lustre/home/matthewL/bin/checkVCF/checkVCF.py -r /mnt/lustre/home/matthewL/bin/checkVCF/hs37d5.fa -o test ${i}_maf01-updated-chr${RR}.vcf.gz
 
-        rm -f ${i}_maf01-updated-chr${RR}.vcf   
+       # rm -f ${i}_maf01-updated-chr${RR}.vcf   
         echo -e "\n${i} chr ${RR} done\n"
       done
   done #loop through sets
@@ -5098,10 +5098,10 @@ done #loop to turn on/off
 
 #quick test have the new version of files
 
-grep -w "rs9662633\|rs41306613\|rs4670855\|rs4493574\|rs9443079\|rs61731700\|rs9403839\|rs13265018\|rs10107655\|exm779484\|rs61866610\|rs74017766\|exm1345519\|rs7276462" ${dirK}/HRC_upload_cleaned_files_lower_MAF/2016_cleaning_EPIGENE_QTWIN_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr*.bim
+#grep -w "rs9662633\|rs41306613\|rs4670855\|rs4493574\|rs9443079\|rs61731700\|rs9403839\|rs13265018\|rs10107655\|exm779484\|rs61866610\|rs74017766\|exm1345519\|rs7276462" ${dirK}/HRC_upload_cleaned_files_lower_MAF/2016_cleaning_EPIGENE_QTWIN_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr*.bim
   #not in there, good
 
-grep -w "rs17774013\|rs870585\|rs644893" ${dirK}/HRC_upload_cleaned_files_lower_MAF/2016_cleaning_HEIDELBERG_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr*.bim
+#grep -w "rs17774013\|rs870585\|rs644893" ${dirK}/HRC_upload_cleaned_files_lower_MAF/2016_cleaning_HEIDELBERG_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr*.bim
   #not in there, good
 
  #16/08/2016 did a test run of AMFS in a few batches (kept failing until I realised chrX not working for HRC yet. However i chose HRC r1.1 2016, (only other HRC depreciated). Phasing via EAGLE, EUR pop. QC and imputation whereas we need phasing by SHAPEIT. took only ~48hrs to run though so deleted it and started again
