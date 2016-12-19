@@ -5139,8 +5139,8 @@ done #loop to turn on/off
   jobname=job-20160831-195838 #job-20160823-013344 #job-20160830-023412 #job-20160823-013754 #job-20160823-011125 #job-20160823-010530 #job-20160823-000628 #job-20160815-021257 #job-20160815-020126 #job-20160815-015621 #job-20160815-015124  #job-20160815-014613 
   cd ~/Downloads/${jobname}
   new_name=2016_cleaning_QMEGA_610k_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr #2016_cleaning_HEIDELBERG_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD_maf01-updated-chr  #2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD_maf01-updated-chr #2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD_maf01-updated-chr #2016_cleaning_EPIGENE_QTWIN_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD_maf01-updated-chr  #2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD_maf01-updated-chr #2016_cleaning_WAMHS_OAG_IBD_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr #2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr #2016_cleaning_QMEGA_610k_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr #2016_cleaning_HEIDELBERG_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr #2016_cleaning_EPIGENE_QTWIN_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr #2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr
-  imp_pw=1X4A4WqkCWCI2 #bt6GLbxANQC7O #M2y68BJoe8T3D #iI4KAhYtJcA1V #douCejRNBJJlJ #lUjWE521jcnP9 #73GrTP3ISNNhp #tWJNholRxV #kVWqFZReRc #ULVnSkVXkc #zXDzOpfILl #KircxIgXIO 
-  dirQQ=/working/lab_stuartma/matthewL/MELANOMA/IMPUTATION_2016
+  imp_pw=0GfiFRp6Oc4B5 #bt6GLbxANQC7O #M2y68BJoe8T3D #iI4KAhYtJcA1V #douCejRNBJJlJ #lUjWE521jcnP9 #73GrTP3ISNNhp #tWJNholRxV #kVWqFZReRc #ULVnSkVXkc #zXDzOpfILl #KircxIgXIO 
+  dirQQ=/working/lab_stuartma/puyaG/glaucoma/POAG2016genotypes/ANZRAG_phase4-Non-advancedGlaucoma_phase5-Progressa/cleaned/IMPUTATION_RESULTS
   #mv statistics_chr14_21.txt ${dirQQ}/statistics_${new_name}14_21.txt
   #mv statistics_chr1_5.txt ${dirQQ}/statistics_${new_name}1_5.txt
   #mv statistics_chr22.txt ${dirQQ}/statistics_${new_name}22.txt
@@ -5150,15 +5150,15 @@ done #loop to turn on/off
   #mv QC-Report_AMFS_chr22.html ${dirQQ}/QC-Report_${new_name}22.html
   #mv QC-Report_AMFS_chr6_13.html ${dirQQ}/QC-Report_${new_name}6_13.html
   
-  mv qcreport.html ${dirQQ}/QC-Report_${new_name}.html
-  mv statistics.txt ${dirQQ}/Statistics_${new_name}.txt
+  #mv qcreport.html ${dirQQ}/QC-Report_${new_name}.html
+  #mv statistics.txt ${dirQQ}/Statistics_${new_name}.txt
   #+++++++testing new version for chr22  new AMFS data in ~/Downloads/job-20160815-014613, seems to run okay for chr22, try for rest before the results are deleted from the website
-  for i in {3..9} #{1..22}
+  for i in {1..22} #{1..22}
   do
-    mv chr_${i}.log ${new_name}${i}.log
+    #mv chr_${i}.log ${new_name}${i}.log
     unzip -P ${imp_pw} chr_${i}.zip
-    mv chr${i}.dose.vcf.gz.tbi ${new_name}${i}.dose.vcf.gz.tbi
-    mv chr${i}.info.gz ${new_name}${i}.info.gz
+    #mv chr${i}.dose.vcf.gz.tbi ${new_name}${i}.dose.vcf.gz.tbi
+    #mv chr${i}.info.gz ${new_name}${i}.info.gz
     #files may be missing line break on final line based on  files may be missing line break on final line. This test http://stackoverflow.com/questions/10082204/add-a-newline-only-if-it-doesnt-exist should check for a new line and fix it if not there. AMFS chr22 seemed to be okay. Tested it on a set of dummy files and seemed to work okay
     if [ "$(zcat "chr${i}.dose.vcf.gz" | tail -c1 ;echo x)" != $'\nx' ]
       then
@@ -5183,36 +5183,36 @@ done #loop to turn on/off
    #So AMFS, all SNPs, SHAPEIT, 1000 genomes phase 3 v5, EUR set.  Didn't note job, I think it is job-20160906-021717 2sjBIdMGLfF9J 
    #19/10/2016 never moved this to scratch, doing so now.
 
-  new_name=2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD_1000G_imp-updated-chr
-  imp_pw=2sjBIdMGLfF9J
-  dirQQ=/working/lab_stuartma/matthewL/MELANOMA/IMPUTATION_2016
+  #new_name=2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD_1000G_imp-updated-chr
+  #imp_pw=2sjBIdMGLfF9J
+  #dirQQ=/working/lab_stuartma/matthewL/MELANOMA/IMPUTATION_2016
 
-  mv qcreport.html ${dirQQ}/QC-Report_${new_name}.html
-  mv statistics.txt ${dirQQ}/Statistics_${new_name}.txt
-  for i in {1..21} #22
-  do
-    mv chr_${i}.log ${new_name}${i}.log
-    unzip -P ${imp_pw} chr_${i}.zip
-    mv chr${i}.dose.vcf.gz.tbi ${new_name}${i}.dose.vcf.gz.tbi
-    mv chr${i}.info.gz ${new_name}${i}.info.gz
+  #mv qcreport.html ${dirQQ}/QC-Report_${new_name}.html
+  #mv statistics.txt ${dirQQ}/Statistics_${new_name}.txt
+  #for i in {1..21} #22
+  #do
+    #mv chr_${i}.log ${new_name}${i}.log
+    #unzip -P ${imp_pw} chr_${i}.zip
+    #mv chr${i}.dose.vcf.gz.tbi ${new_name}${i}.dose.vcf.gz.tbi
+    #mv chr${i}.info.gz ${new_name}${i}.info.gz
     #files may be missing line break on final line based on  files may be missing line break on final line. This test http://stackoverflow.com/questions/10082204/add-a-newline-only-if-it-doesnt-exist should check for a new line and fix it if not there. AMFS chr22 seemed to be okay. Tested it on a set of dummy files and seemed to work okay
-    if [ "$(zcat "chr${i}.dose.vcf.gz" | tail -c1 ;echo x)" != $'\nx' ]
-      then
-        echo -e "\nMissing end of line break found, fixing\n"
-        zcat chr${i}.dose.vcf.gz |  sed  -e '$a\' > ${new_name}${i}.dose.vcf; gzip ${new_name}${i}.dose.vcf
-        mv chr${i}.dose.vcf.gz ${new_name}${i}.dose.vcf.gz
-      else
-        echo -e "\nvcf has correct line breaks on each line\n"
-        mv chr${i}.dose.vcf.gz ${new_name}${i}.dose.vcf.gz
-      fi
+    #if [ "$(zcat "chr${i}.dose.vcf.gz" | tail -c1 ;echo x)" != $'\nx' ]
+      #then
+        #echo -e "\nMissing end of line break found, fixing\n"
+        #zcat chr${i}.dose.vcf.gz |  sed  -e '$a\' > ${new_name}${i}.dose.vcf; gzip ${new_name}${i}.dose.vcf
+        #mv chr${i}.dose.vcf.gz ${new_name}${i}.dose.vcf.gz
+      #else
+        #echo -e "\nvcf has correct line breaks on each line\n"
+        #mv chr${i}.dose.vcf.gz ${new_name}${i}.dose.vcf.gz
+      #fi
     #files may be missing line break on final line - this command should fix that (didn't run for AMFS) BUT NOT TESTED YET!
       #zcat chr${i}.dose.vcf.gz |  sed  -e '$a\' > ${new_name}${i}.dose2.vcf; gzip ${new_name}${i}.dose2.vcf
       #AMFS chr22 seemed to be okay? Not sure if this command is working - testing on new AMFS chr22 data. Flagged .gz as lacking the line break even when it seems to have it
-    zip Archive_${new_name}${i}.zip  ${new_name}${i}.*
-    rm -f ${new_name}${i}.dose.vcf.gz ${new_name}${i}.dose.vcf.gz.tbi ${new_name}${i}.info.gz ${new_name}${i}.log chr_${i}.zip
-    mv Archive_${new_name}${i}.zip ${dirQQ}/
+    #zip Archive_${new_name}${i}.zip  ${new_name}${i}.*
+    #rm -f ${new_name}${i}.dose.vcf.gz ${new_name}${i}.dose.vcf.gz.tbi ${new_name}${i}.info.gz ${new_name}${i}.log chr_${i}.zip
+    #mv Archive_${new_name}${i}.zip ${dirQQ}/
 
-  done
+  #done
 
 
  
@@ -5226,31 +5226,24 @@ done #loop to turn on/off
 #12.0 Initial look at AMFS files
 ########################################################################
 #.log not that useful, just logs N of SNPs imputed
-dirQQ=/working/lab_stuartma/matthewL/MELANOMA/IMPUTATION_2016
+dirQQ=/working/lab_stuartma/puyaG/glaucoma/POAG2016genotypes/ANZRAG_phase4-Non-advancedGlaucoma_phase5-Progressa/cleaned/IMPUTATION_RESULTS
 cd $dirQQ
-head 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.log
-#[attempt_201606111211_11579_m_000000_0] INFO  Imputation for chunk chunk_22_0040000001_0060000000 successful.
-#[attempt_201606111211_11579_m_000000_0] INFO    chunk_22_0040000001_0060000000 Snps in info chunk: 188754
-#[attempt_201606111211_11579_m_000001_0] INFO  Imputation for chunk chunk_22_0020000001_0040000000 successful.
-#[attempt_201606111211_11579_m_000001_0] INFO    chunk_22_0020000001_0040000000 Snps in info chunk: 288490
-#[attempt_201606111211_11579_m_000002_0] INFO  Imputation for chunk chunk_22_0000000001_0020000000 successful.
-#[attempt_201606111211_11579_m_000002_0] INFO    chunk_22_0000000001_0020000000 Snps in info chunk: 47300
+head chr_22.log
 
 #the statistics files just seems to be alleles where the ref SNP is different in my data than HRC (e.g. A/G bs G/A)
 
-wc -l statistics_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr6_13.txt
-  #92692 statistics_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr6_13.txt
-grep -c "Allele switch" statistics_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr6_13.txt
+wc -l statistics.txt
+grep -c "Allele switch" statistics.txt
   #92693. Huh? Oh, files aren't formatted correctly, last line break borked.
 
-wc -l statistics_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr*.txt
+#wc -l statistics_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr*.txt
 #   48395 statistics_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr14_21.txt
 #   79791 statistics_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr1_5.txt
 #    3041 statistics_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.txt
 #   92692 statistics_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr6_13.txt
   #223919
 
-grep -c "Allele switch" statistics_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr*.txt
+#grep -c "Allele switch" statistics_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr*.txt
 #statistics_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr14_21.txt:48396
 #statistics_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr1_5.txt:79792
 #statistics_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.txt:3042
@@ -5262,69 +5255,49 @@ grep -c "Allele switch" statistics_2016_cleaning_AMFS_aligned_1KG_geno02_geno3_m
   #2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.dose.vcf.gz
   #2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.dose.vcf.gz.tbi
 
- wc -l 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.dose.vcf.gz.tbi
+ #wc -l 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.dose.vcf.gz.tbi
   #120
 
  #tbi is a vcf specialised format - see https://genome.ucsc.edu/goldenpath/help/vcf.html
 
-zcat 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.info.gz | wc -l
+#zcat 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.info.gz | wc -l
    #524544
   #end is broken - what is wrong with their software? See above for a fix I can pipeline but this will do it
 
- gunzip 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.info.gz
- sed -i -e '$a\' 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.info
- gzip 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.info
+ #gunzip 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.info.gz
+ #sed -i -e '$a\' 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.info
+ #gzip 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.info
 
  #vcf seems to be okay
  #gunzip 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.dose.vcf.gz #<might not be smart, a gig or so.
   # sed -i -e '$a\ 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.dose.vcf
  #gzip 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.dose.vcf
 
- zcat 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.info.gz | grep -c "Genotyped"
-   #11549
+ zcat chr22.info.gz | grep -c "Genotyped"
+#3813
   #http://genome.sph.umich.edu/wiki/Minimac3_Info_File SNps are in chr:post dammit
     #LooRsq This statistic can only be provided for genotyped sites. This is similar to the estimated Rsq above, but the imputed dosages value used to compare are calculated by hiding all known genotypes for the given SNP (see LooDosage).
   #EmpR, EmpRsq While the LooRsq statistic completely ignores experimental genotypes, EmpR is calculated by calculating the correlation between the true genotyped values and the imputed dosages that were calculated by hiding all known genotyped for the given SNP (see LooDosage). A negative correlation between imputed and experimental genotypes can indicate allele flips. This statistic also can only be provided for genotyped sites. EmpRsq is the square of this correlation.
 
   #so I want to look for high Loo, say >0.8 and low EmpRsq and also look for -ve EmpR
 
-  zcat 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.info.gz | awk '$9>0.8 && $11<0.9' | wc -l 
-    #414
+  zcat chr22.info.gz | awk '$9>0.8 && $11<0.9' | wc -l 
+    #316
 
-  zcat 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.info.gz | awk '$9>0.8 && $11<0.85' | wc -l
-    #162
+  zcat chr22.info.gz | awk '$9>0.8 && $11<0.85' | wc -l
+    #74
 
-  zcat 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.info.gz | awk '$9>0.8 && $11<0.8' | wc -l
-    #59
+  zcat chr22.info.gz | awk '$9>0.8 && $11<0.8' | wc -l
+    #5
 
-  zcat 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.info.gz | awk 'NR==1 || $9>0.8 && $11<0.75' 
-#SNP	REF(0)	ALT(1)	ALT_Frq	MAF	AvgCall	Rsq	Genotyped	LooRsq	EmpR	EmpRsq	Dose0	Dose1
-#22:17712611	G	A	0.31525	0.31525	0.99320	0.97483	Genotyped	0.812	0.865	0.74797	0.87413	0.08384
-#22:19717320	G	A	0.35012	0.35012	0.99311	0.97684	Genotyped	0.817	0.859	0.73705	0.86826	0.08711
-#22:25419524	C	T	0.43037	0.43037	0.99626	0.98852	Genotyped	0.830	0.845	0.71432	0.91062	0.13418
-#22:25423062	G	A	0.17647	0.17647	0.99234	0.96025	Genotyped	0.827	0.808	0.65222	0.63597	0.00940 <<
-#22:25425439	A	C	0.39928	0.39928	0.98995	0.96830	Genotyped	0.840	0.840	0.70627	0.86140	0.09158
-#22:25428780	C	T	0.14578	0.14578	0.99540	0.97163	Genotyped	0.850	0.865	0.74881	0.68359	0.00140
-#22:25959183	A	C	0.04829	0.04829	0.99727	0.95638	Genotyped	0.818	0.814	0.66188	0.56636	0.00060 <<
-#22:27929853	T	C	0.93660	0.06340	0.99999	0.99977	Genotyped	1.000	0.851	0.72483	0.98252	0.00000
-#22:31533225	G	A	0.56588	0.43412	0.99363	0.98122	Genotyped	0.815	0.815	0.66375	0.88868	0.15370 <<
-#22:32339782	G	A	0.07264	0.07264	0.99863	0.98444	Genotyped	0.803	0.858	0.73587	0.82056	0.02125
-#22:33898427	A	G	0.23596	0.23596	0.99545	0.98272	Genotyped	0.810	0.844	0.71245	0.82765	0.06140
-#22:35532059	T	C	0.41592	0.41592	0.99522	0.98445	Genotyped	0.842	0.859	0.73765	0.87753	0.08928
-#22:37259273	C	T	0.47055	0.47055	0.99833	0.99439	Genotyped	0.813	0.863	0.74475	0.87474	0.09743
-#22:38864460	G	A	0.10982	0.10982	0.99859	0.98918	Genotyped	0.802	0.862	0.74379	0.81427	0.02869
-#22:39525436	C	T	0.42475	0.42475	0.99000	0.96733	Genotyped	0.876	0.866	0.74999	0.79948	0.01298
-#22:44496917	A	G	0.15443	0.15443	0.99863	0.99146	Genotyped	0.806	0.866	0.74926	0.85889	0.04664
-#22:44499558	G	A	0.07799	0.07799	0.99618	0.95986	Genotyped	0.804	0.781	0.60982	0.70386	0.02133 <<
-#22:44499643	T	C	0.08721	0.08721	0.99869	0.98745	Genotyped	0.802	0.860	0.74012	0.82820	0.02565
-#22:45258495	A	G	0.55006	0.44994	0.99143	0.97391	Genotyped	0.927	0.866	0.74950	0.84425	0.00149
-#22:49489917	A	G	0.09799	0.09799	0.99585	0.96577	Genotyped	0.842	0.855	0.73124	0.64365	0.00015 
-#22:50793661	T	C	0.30208	0.30208	0.98657	0.95466	Genotyped	0.915	0.816	0.66533	0.72079	0.00461 <<
-    #21, 22 inc header
+  zcat chr22.info.gz | awk 'NR==1 || $9>0.8 && $11<0.75' 
+#SNP     REF(0)  ALT(1)  ALT_Frq MAF     AvgCall Rsq     Genotyped       LooRsq  EmpR    EmpRsq  Dose0   Dose1
+#22:27929853     T       C       0.94063 0.05937 0.99750 0.96681 Genotyped       0.889   0.816   0.66560 0.96945 0.02160
+#22:44322922     T       G       0.09160 0.09160 0.99885 0.98919 Genotyped       0.801   0.864   0.74589 0.80597 0.02299
 
 #hard to be too concerned - that said so easy to filter and rerun... maybe just for new regions? A few are properly low Info > 0.8, con <0.66 or so
 
-  zcat 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr22.info.gz | awk 'NR==1 ||$8=="Genotyped" && $10 < 0' | wc -l
+  zcat chr22.info.gz | awk 'NR==1 ||$8=="Genotyped" && $10 < 0' | wc -l
   #1 - header only.
 
   #Still would be an easy QC - get the whole imp, flag low concord SNP, remove, rerun. 
@@ -5336,35 +5309,30 @@ zcat 2016_cleaning_AMFS_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-
   #For QMEGA_omni there is a huge run on chrom 15 where the the maf in the HRC set is always ~20%, so start looking at chr15. Note though the problem may be more severe than shown by the extreme chisq values - there might be more bad SNPS where the freq difference isn't as sever (is 25 when it should be MAF 20)
 
 
-cd $dirQQ
-mkdir temp
-cd temp
-cp ../QC-Report_2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr.html .
-cp ../Archive_2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr16.zip .
-cp ../Statistics_2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr.txt .
+#cd $dirQQ
+#mkdir temp
+#cd temp
+#cp ../QC-Report_2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr.html .
+#cp ../Archive_2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr16.zip .
+#cp ../Statistics_2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr.txt .
 
   ##grep "Mismatched" QC-Report_2016_cleaning_QMEGA_omni_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr.html | sed 's/## //g' | sed 's/&#39;//g' | grep -v frequencies
     #so all are Mismatched frequencies
 
 #look at a few chr other than 15 to see if there is a systematic difference (e.g. always omni or always HRC diff to 1KG. If random probably just sampling between the sets)
-k=EPIGENE_QTWIN # HEIDELBERG # QMEGA_omni
-dirV=/working/lab_stuartma/scratch/matthewL/ALL_1000G_phase1integrated_v3_impute
+#k=EPIGENE_QTWIN # HEIDELBERG # QMEGA_omni
+#dirV=/working/lab_stuartma/scratch/matthewL/ALL_1000G_phase1integrated_v3_impute
 
-grep "Mismatched" ${dirQQ}/QC-Report_2016_cleaning_${k}_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr.html | sed 's/## //g' | sed 's/&#39;//g' | sed 's/Mismatched frequencies for //g' | sed 's/:/ /g' | sed 's/f\[//g' | sed 's/\] = \[/ /g' | sed 's/\] vs \[/ /g' | sed 's/,/ /g' | sed 's/\]  chisq / /g' | wc -l
-  #QMEGA_omni 632 EPIGENE_QTWIN=260.
-
-for i in 15 # 1 4 7 16
+grep "Mismatched" qcreport.html | sed 's/## //g' | sed 's/&#39;//g' | sed 's/Mismatched frequencies for //g' | sed 's/:/ /g' | sed 's/f\[//g' | sed 's/\] = \[/ /g' | sed 's/\] vs \[/ /g' | sed 's/,/ /g' | sed 's/\]  chisq / /g' | wc -l
+  
+dirK=/working/lab_stuartma/puyaG/glaucoma/POAG2016genotypes/ANZRAG_phase4-Non-advancedGlaucoma_phase5-Progressa/cleaned
+for i in 15 1 4 7 16
 do
-  wc -l ${dirK}/HRC_upload_cleaned_files_lower_MAF/2016_cleaning_${k}_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr${i}.bim ; echo ""
-  #QMEGA_OMNI: 1=63929; 4=46354; 7=41678, 16=24364, 15 = 23189
-  #EPIGENE_QTWIN: 1=22777; 4=17447, 15 = 
-  grep "Mismatched" ${dirQQ}/QC-Report_2016_cleaning_${k}_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr.html | sed 's/## //g' | sed 's/&#39;//g' | sed 's/Mismatched frequencies for //g' | sed 's/:/ /g' | sed 's/f\[//g' | sed 's/\] = \[/ /g' | sed 's/\] vs \[/ /g' | sed 's/,/ /g' | sed 's/\]  chisq / /g' | awk '$1=='''${i}''' {print $2}' | wc -l ; echo ""
-  #QMEGA_OMNI: 1=18; 4=6; 7=10; 16=13; 15=333. So ~50% on chr15.
-  #EPIGENE_QTWIN: 1=5; 4=1 (checked, is just 1), 7=15195, 15=160 so ~60% on chr15
-  #
+  wc -l ${dirK}/Non-advancedGlaucoma_Progressa_ENDOcontrols_aligned_1KG_min_clean2_geno3_mind3_hweCo_PCA_IBD_maf1-updated-chr${i}.bim ; echo ""
+  grep "Mismatched" qcreport.html | sed 's/## //g' | sed 's/&#39;//g' | sed 's/Mismatched frequencies for //g' | sed 's/:/ /g' | sed 's/f\[//g' | sed 's/\] = \[/ /g' | sed 's/\] vs \[/ /g' | sed 's/,/ /g' | sed 's/\]  chisq / /g' | awk '$1=='''${i}''' {print $2}' | wc -l ; echo ""
 
   #To allow a more formal comparison, merge 1KG data with this set, and add a step to filter out incorrect matches (indels/SNP overlaps). May as well insert a header with printf while in there. Checked bim freqs and input data (my data) has its freq reported first in the mismatch report
-  awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(grep "Mismatched" ${dirQQ}/QC-Report_2016_cleaning_${k}_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr.html | sed 's/## //g' | sed 's/&#39;//g' | sed 's/Mismatched frequencies for //g' | sed 's/:/ /g' | sed 's/f\[//g' | sed 's/\] = \[/ /g' | sed 's/\] vs \[/ /g' | sed 's/,/ /g' | sed 's/\]  chisq / /g' | awk '$1=='''${i}''' ') <(awk 'NR==FNR {a[$1];next} $2 in a {print $1,$2,$3,$4,(1-$8),$8}' <(grep "Mismatched" ${dirQQ}/QC-Report_2016_cleaning_${k}_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr.html | sed 's/## //g' | sed 's/&#39;//g' | sed 's/Mismatched frequencies for //g' | sed 's/:/ /g' | sed 's/f\[//g' | sed 's/\] = \[/ /g' | sed 's/\] vs \[/ /g' | sed 's/,/ /g' | sed 's/\]  chisq / /g' | awk '$1=='''${i}''' {print $2}') <(gunzip -dc ${dirV}/ALL_1000G_phase1integrated_v3_chr${i}_impute.legend.gz ) ) | awk '($3==$12 && $4==$13) || ($4==$12 && $3==$13)' | awk 'BEGIN{ printf("CHR BP A1 A2 F1_in F2_in F1_HRC F2_HRC chisq 1kg_ID BP a0 a1 Fa0 Fa1\n" )} {print$0}' ; echo ""
+  awk 'NR==FNR {a[$2]=$0;next} $2 in a {print a[$2],$0}' <(grep "Mismatched" qcreport.html | sed 's/## //g' | sed 's/&#39;//g' | sed 's/Mismatched frequencies for //g' | sed 's/:/ /g' | sed 's/f\[//g' | sed 's/\] = \[/ /g' | sed 's/\] vs \[/ /g' | sed 's/,/ /g' | sed 's/\]  chisq / /g' | awk '$1=='''${i}''' ') <(awk 'NR==FNR {a[$1];next} $2 in a {print $1,$2,$3,$4,(1-$8),$8}' <(grep "Mismatched" qcreport.html | sed 's/## //g' | sed 's/&#39;//g' | sed 's/Mismatched frequencies for //g' | sed 's/:/ /g' | sed 's/f\[//g' | sed 's/\] = \[/ /g' | sed 's/\] vs \[/ /g' | sed 's/,/ /g' | sed 's/\]  chisq / /g' | awk '$1=='''${i}''' {print $2}') <(gunzip -dc /working/lab_stuartma/puyaG/BEEA_meta_analysis/1000G_phase1_June_2014_release_phased/ALL.integrated_phase1_SHAPEIT_16-06-14.nomono/ALL.chr${i}.integrated_phase1_v3.20101123.snps_indels_svs.genotypes.nomono.legend.gz ) ) | awk '($3==$12 && $4==$13) || ($4==$12 && $3==$13)' | awk 'BEGIN{ printf("CHR BP A1 A2 F1_in F2_in F1_HRC F2_HRC chisq 1kg_ID BP a0 a1 Fa0 Fa1\n" )} {print$0}' ; echo ""
 
   #chr15 has 330 or so mismtachs, a lot more than expect. So have a slightly more complex step after to explore. Are they all testing the same allele?  yep
   
@@ -5375,18 +5343,19 @@ done
 
 #while 15 seems to be the worst, looks for other chromosomes with proportionally more. count number of SNPs per CHR in bim file, then count number of times a chr SNP is flagged as mismatch using uniq -c and sort to arrange by chr, and merge on said chromosome, then insert a header
 
-
-for k in EPIGENE_QTWIN HEIDELBERG QMEGA_omni WAMHS_OAG_IBD AMFS
+dirK=/working/lab_stuartma/puyaG/glaucoma/POAG2016genotypes/ANZRAG_phase4-Non-advancedGlaucoma_phase5-Progressa/cleaned
+dirI=/working/lab_stuartma/puyaG/glaucoma/POAG2016genotypes/ANZRAG_phase4-Non-advancedGlaucoma_phase5-Progressa/cleaned/IMPUTATION_RESULTS
+for k in Non-advancedGlaucoma_Progressa_ENDOcontrols
 do
   echo -e "\n${k}"
-  awk 'NR==FNR {a[$2]=$1;next} $2 in a {print $2,$1,a[$2]}' <(cut -f1 ${dirK}/HRC_upload_cleaned_files_lower_MAF/2016_cleaning_${k}_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated.bim | awk '$1<23 && $1>0' | sort | uniq -c | sed 's/ \+/ /g' | sed 's/^ //g' | sort -n -k2,2 ) <( grep "Mismatched" ${dirQQ}/QC-Report_2016_cleaning_${k}_aligned_1KG_geno02_geno3_mind3_hweCo_hweCa_diff_PCA_IBD-updated-chr.html | sed 's/## //g' | sed 's/&#39;//g' | sed 's/Mismatched frequencies for //g' | sed 's/:/ /g' | sed 's/f\[//g' | sed 's/\] = \[/ /g' | sed 's/\] vs \[/ /g' | sed 's/,/ /g' | sed 's/\]  chisq / /g' | cut -d" " -f1 | sort | uniq -c | sed 's/ \+/ /g' | sed 's/^ //g' | sort -n -k2,2) |     awk ' BEGIN{ printf("CHR N_miss N_SNP PER\n")} {print $0,(100*($2/$3))}' > ${dirI}/temp_${k}_missN; wc -l  ${dirI}/temp_${k}_missN
+  awk 'NR==FNR {a[$2]=$1;next} $2 in a {print $2,$1,a[$2]}' <(cut -f1 ${dirK}/${k}_aligned_1KG_min_clean2_geno3_mind3_hweCo_PCA_IBD_maf1-updated.bim | awk '$1<23 && $1>0' | sort | uniq -c | sed 's/ \+/ /g' | sed 's/^ //g' | sort -n -k2,2 ) <( grep "Mismatched" qcreport.html | sed 's/## //g' | sed 's/&#39;//g' | sed 's/Mismatched frequencies for //g' | sed 's/:/ /g' | sed 's/f\[//g' | sed 's/\] = \[/ /g' | sed 's/\] vs \[/ /g' | sed 's/,/ /g' | sed 's/\]  chisq / /g' | cut -d" " -f1 | sort | uniq -c | sed 's/ \+/ /g' | sed 's/^ //g' | sort -n -k2,2) |     awk ' BEGIN{ printf("CHR N_miss N_SNP PER\n")} {print $0,(100*($2/$3))}' > ${dirI}/temp_${k}_missN; wc -l  ${dirI}/temp_${k}_missN
    #some 20 not 23 (22 + header) as some chr have no errors. Will make plotting a bit fiddlier
 
 done
 
 echo "CHR N_miss N_SNP PER SET" > ${dirI}/temp_HRC_miss
 
-for k in EPIGENE_QTWIN HEIDELBERG QMEGA_omni WAMHS_OAG_IBD AMFS
+for k in Non-advancedGlaucoma_Progressa_ENDOcontrols #EPIGENE_QTWIN HEIDELBERG QMEGA_omni WAMHS_OAG_IBD AMFS
 do
   for i in {1..22}
   do
@@ -5412,8 +5381,8 @@ dd<-read.table("temp_HRC_miss",header=T)
 
 #work out an informative range
 summary(dd\$PER)
-#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#0.00000 0.01880 0.03162 0.19360 0.05440 4.58300
+#Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+#0.00000 0.03398 0.05718 0.42940 0.10740 6.35100
 
 png("temp_HRC_miss.png")
 qplot(CHR,PER,data=dd,colour=SET,ylim=c(0,5),xlab="CHROMOSOME",ylab="PERCENTAGE SNPs with freq chisq diff > 300")
@@ -5487,7 +5456,7 @@ EOF
 ########################################################################
 #X.0 Clean up
 ########################################################################
-${dirK}/Melanoma_clean_2016_merged_PCA.eigenvec_IDs
+#${dirK}/Melanoma_clean_2016_merged_PCA.eigenvec_IDs
 
 
 
@@ -5498,6 +5467,8 @@ exit
 ########################################################################
 #A.0 Appendix
 ########################################################################
+
+
 
 
 
